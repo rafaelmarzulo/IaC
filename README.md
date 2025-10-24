@@ -137,9 +137,8 @@ iac/
 ├── scripts/
 │   └── setup-*.sh         # Scripts de setup e utilitários
 ├── docs/
-│   ├── ARCHITECTURE.md    # Documentação detalhada da arquitetura
-│   ├── SETUP.md          # Guia de setup
-│   └── TROUBLESHOOTING.md # Problemas comuns e soluções
+│   ├── ARQUITETURA.md     # Documentação detalhada da arquitetura
+│   └── INSTALACAO.md      # Guia de instalação detalhado
 └── config.yml            # Arquivo de configuração principal
 ```
 
@@ -163,8 +162,6 @@ iac/
 
 - [Detalhes da Arquitetura](docs/ARQUITETURA.md)
 - [Guia de Instalação](docs/INSTALACAO.md)
-- [Solução de Problemas](docs/TROUBLESHOOTING.md)
-- [Guia de Segurança](docs/SECURITY.md)
 
 ## Contribuindo
 
@@ -181,7 +178,7 @@ Este template é fornecido sob Licença MIT. Sinta-se livre para usar e modifica
 ## Suporte
 
 Para problemas e questões:
-- Verifique [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- Verifique [docs/INSTALACAO.md](docs/INSTALACAO.md) para configuração
 - Abra uma issue neste repositório
 - Revise os logs do GitHub Actions
 
