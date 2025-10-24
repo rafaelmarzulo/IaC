@@ -56,11 +56,11 @@ output "vm_ssh_commands" {
 output "network_info" {
   description = "Network configuration details"
   value = {
-    bridge    = var.network_bridge
-    base_ip   = var.ip_base
-    gateway   = var.ip_gateway
-    cidr      = var.ip_cidr
-    dns       = var.nameserver
+    bridge  = var.network_bridge
+    base_ip = var.ip_base
+    gateway = var.ip_gateway
+    cidr    = var.ip_cidr
+    dns     = var.nameserver
   }
 }
 

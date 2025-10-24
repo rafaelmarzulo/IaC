@@ -20,7 +20,7 @@ provider "proxmox" {
 
 # Data sources for existing resources
 data "proxmox_template" "ubuntu_template" {
-  count    = var.template_id != "" ? 1 : 0
+  count       = var.template_id != "" ? 1 : 0
   most_recent = true
   template_id = var.template_id
 }
