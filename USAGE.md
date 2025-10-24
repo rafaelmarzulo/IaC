@@ -189,8 +189,8 @@ ssh usuario@vm-alvo
 
 ## Suporte
 
-- Verifique [docs/SETUP.md](docs/SETUP.md) para setup detalhado
-- Revise [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para detalhes de design
+- Verifique [docs/INSTALACAO.md](docs/INSTALACAO.md) para setup detalhado
+- Revise [docs/ARQUITETURA.md](docs/ARQUITETURA.md) para detalhes de design
 - Verifique logs do GitHub Actions para problemas de pipeline
 - Revise logs do Proxmox para problemas de infraestrutura
 

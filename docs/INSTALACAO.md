@@ -370,7 +370,7 @@ Após setup bem-sucedido:
 
 ## Recursos de Suporte
 
-- [Documentação da Arquitetura](ARCHITECTURE.md)
+- [Documentação da Arquitetura](ARQUITETURA.md)
 - [Guia de Solução de Problemas](TROUBLESHOOTING.md)
 - [Documentação GitHub Actions](https://docs.github.com/en/actions)
 - [Terraform Proxmox Provider](https://registry.terraform.io/providers/Telmate/proxmox/latest/docs)

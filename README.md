@@ -161,8 +161,8 @@ iac/
 
 ## Documentação
 
-- [Detalhes da Arquitetura](docs/ARCHITECTURE.md)
-- [Guia de Setup](docs/SETUP.md)
+- [Detalhes da Arquitetura](docs/ARQUITETURA.md)
+- [Guia de Instalação](docs/INSTALACAO.md)
 - [Solução de Problemas](docs/TROUBLESHOOTING.md)
 - [Guia de Segurança](docs/SECURITY.md)
 
