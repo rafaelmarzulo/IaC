@@ -19,11 +19,8 @@ provider "proxmox" {
 }
 
 # Data sources for existing resources
-data "proxmox_template" "ubuntu_template" {
-  count       = var.template_id != "" ? 1 : 0
-  most_recent = true
-  template_id = var.template_id
-}
+# Note: proxmox_template data source is not available in Telmate/proxmox provider
+# Templates are referenced directly by name in the VM resource
 
 # Local values for common configurations
 locals {
