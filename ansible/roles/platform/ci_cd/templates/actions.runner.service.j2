@@ -1,0 +1,15 @@
+[Unit]
+Description=GitHub Actions Runner ({{ ci_cd_runner_name | default(ansible_hostname) }})
+After=network.target
+
+[Service]
+ExecStart={{ ci_cd_runner_install_dir }}/run.sh
+WorkingDirectory={{ ci_cd_runner_install_dir }}
+User={{ ci_cd_runner_user }}
+Group={{ ci_cd_runner_group }}
+Restart=always
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target

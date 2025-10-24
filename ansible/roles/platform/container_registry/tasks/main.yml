@@ -1,0 +1,106 @@
+---
+# tasks file for platform/container_registry
+
+- name: "Container Registry | Garantir que Docker e Docker Compose estejam instalados"
+  ansible.builtin.include_role:
+    name: "platform/docker"
+  when: container_registry_harbor_enabled
+  tags: ["container_registry", "harbor", "dependencies"]
+
+- name: "Container Registry | Criar diretório de instalação do Harbor"
+  ansible.builtin.file:
+    path: "{{ container_registry_harbor_install_dir }}"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  become: true
+  when: container_registry_harbor_enabled
+  tags: ["container_registry", "harbor", "configuration"]
+
+- name: "Container Registry | Baixar instalador do Harbor"
+  ansible.builtin.get_url:
+    url: "https://github.com/goharbor/harbor/releases/download/v{{ container_registry_harbor_version }}/harbor-offline-installer-v{{ container_registry_harbor_version }}.tgz"
+    dest: "/tmp/harbor-offline-installer-v{{ container_registry_harbor_version }}.tgz"
+    mode: "0644"
+  become: true
+  when: container_registry_harbor_enabled and not ansible.builtin.stat(path='{{ container_registry_harbor_install_dir }}/harbor/install.sh').stat.exists
+  tags: ["container_registry", "harbor", "download"]
+
+- name: "Container Registry | Extrair instalador do Harbor"
+  ansible.builtin.unarchive:
+    src: "/tmp/harbor-offline-installer-v{{ container_registry_harbor_version }}.tgz"
+    dest: "{{ container_registry_harbor_install_dir }}"
+    remote_src: true
+    creates: "{{ container_registry_harbor_install_dir }}/harbor/install.sh"
+  become: true
+  when: container_registry_harbor_enabled and not ansible.builtin.stat(path='{{ container_registry_harbor_install_dir }}/harbor/install.sh').stat.exists
+  tags: ["container_registry", "harbor", "installation"]
+
+- name: "Container Registry | Gerar certificados auto-assinados (APENAS PARA TESTES!)"
+  ansible.builtin.command: "/bin/bash -c 'openssl req -newkey rsa:4096 -nodes -sha256 -keyout {{ container_registry_harbor_install_dir }}/harbor/certs/{{ container_registry_harbor_hostname }}.key -x509 -days 365 -out {{ container_registry_harbor_install_dir }}/harbor/certs/{{ container_registry_harbor_hostname }}.crt -subj \"/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN={{ container_registry_harbor_hostname }}\"'
+  args:
+    creates: "{{ container_registry_harbor_install_dir }}/harbor/certs/{{ container_registry_harbor_hostname }}.crt"
+  become: true
+  when: container_registry_harbor_enabled and container_registry_harbor_generate_certs
+  tags: ["container_registry", "harbor", "certs"]
+
+- name: "Container Registry | Criar diretório para certificados (se não gerados)"
+  ansible.builtin.file:
+    path: "{{ container_registry_harbor_install_dir }}/harbor/certs"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  become: true
+  when: container_registry_harbor_enabled and not container_registry_harbor_generate_certs
+  tags: ["container_registry", "harbor", "certs"]
+
+- name: "Container Registry | Copiar certificados existentes (se não gerados)"
+  ansible.builtin.copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  loop:
+    - { src: "{{ container_registry_harbor_cert_path }}", dest: "{{ container_registry_harbor_install_dir }}/harbor/certs/{{ container_registry_harbor_hostname }}.crt" }
+    - { src: "{{ container_registry_harbor_key_path }}", dest: "{{ container_registry_harbor_install_dir }}/harbor/certs/{{ container_registry_harbor_hostname }}.key" }
+    - { src: "{{ container_registry_harbor_ca_path }}", dest: "{{ container_registry_harbor_install_dir }}/harbor/certs/ca.crt" }
+  when: container_registry_harbor_enabled and not container_registry_harbor_generate_certs
+  tags: ["container_registry", "harbor", "certs"]
+
+- name: "Container Registry | Implantar harbor.yml"
+  ansible.builtin.template:
+    src: "harbor.yml.j2"
+    dest: "{{ container_registry_harbor_install_dir }}/harbor/harbor.yml"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  when: container_registry_harbor_enabled
+  tags: ["container_registry", "harbor", "configuration"]
+
+- name: "Container Registry | Executar script de instalação do Harbor"
+  ansible.builtin.command: "./install.sh --with-chartmuseum --with-clair --with-notary --with-trivy"
+  args:
+    chdir: "{{ container_registry_harbor_install_dir }}/harbor"
+    creates: "{{ container_registry_harbor_install_dir }}/harbor/docker-compose.yml"
+  become: true
+  when: container_registry_harbor_enabled
+  tags: ["container_registry", "harbor", "installation"]
+
+- name: "Container Registry | Abrir portas do Harbor no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ item }}"
+    proto: "tcp"
+    comment: "Allow Harbor traffic"
+  become: true
+  loop:
+    - "{{ container_registry_harbor_http_port }}"
+    - "{{ container_registry_harbor_https_port }}"
+    - "{{ container_registry_harbor_ui_port }}"
+  when: container_registry_harbor_enabled
+  tags: ["container_registry", "harbor", "firewall"]

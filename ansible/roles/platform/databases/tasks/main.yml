@@ -1,0 +1,83 @@
+---
+# tasks file for platform/databases
+
+- name: "Databases | Garantir que PostgreSQL esteja instalado"
+  ansible.builtin.package:
+    name:
+      - "{{ databases_postgresql_package_name }}"
+      - "{{ databases_postgresql_contrib_package_name }}"
+    state: "present"
+    update_cache: true
+  become: true
+  when: databases_postgresql_enabled
+  tags: ["databases", "postgresql", "packages"]
+
+- name: "Databases | Implantar postgresql.conf"
+  ansible.builtin.template:
+    src: "postgresql.conf.j2"
+    dest: "/etc/postgresql/{{ databases_postgresql_version }}/main/postgresql.conf"
+    owner: "postgres"
+    group: "postgres"
+    mode: "0644"
+  become: true
+  when: databases_postgresql_enabled
+  notify: "Reiniciar postgresql"
+  tags: ["databases", "postgresql", "configuration"]
+
+- name: "Databases | Implantar pg_hba.conf"
+  ansible.builtin.template:
+    src: "pg_hba.conf.j2"
+    dest: "/etc/postgresql/{{ databases_postgresql_version }}/main/pg_hba.conf"
+    owner: "postgres"
+    group: "postgres"
+    mode: "0640"
+  become: true
+  when: databases_postgresql_enabled
+  notify: "Reiniciar postgresql"
+  tags: ["databases", "postgresql", "configuration"]
+
+- name: "Databases | Garantir que o serviço PostgreSQL esteja rodando e habilitado"
+  ansible.builtin.service:
+    name: "postgresql"
+    state: "started"
+    enabled: true
+  become: true
+  when: databases_postgresql_enabled
+  tags: ["databases", "postgresql", "service"]
+
+- name: "Databases | Criar bancos de dados"
+  community.postgresql.postgresql_db:
+    name: "{{ item.name }}"
+    owner: "{{ item.owner | default(omit) }}"
+    encoding: "{{ item.encoding | default(omit) }}"
+    lc_collate: "{{ item.lc_collate | default(omit) }}"
+    lc_ctype: "{{ item.lc_ctype | default(omit) }}"
+    state: "present"
+  become: true
+  become_user: "postgres"
+  loop: "{{ databases_postgresql_databases_to_create }}"
+  when: databases_postgresql_enabled and databases_postgresql_databases_to_create | length > 0
+  tags: ["databases", "postgresql", "creation"]
+
+- name: "Databases | Criar usuários de banco de dados"
+  community.postgresql.postgresql_user:
+    db: "{{ item.db | default(omit) }}"
+    name: "{{ item.name }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv | default(omit) }}"
+    state: "present"
+  become: true
+  become_user: "postgres"
+  loop: "{{ databases_postgresql_users_to_create }}"
+  when: databases_postgresql_enabled and databases_postgresql_users_to_create | length > 0
+  tags: ["databases", "postgresql", "creation"]
+
+- name: "Databases | Abrir porta do PostgreSQL no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ databases_postgresql_port }}"
+    proto: "tcp"
+    comment: "Allow PostgreSQL traffic"
+  become: true
+  when: databases_postgresql_enabled
+  tags: ["databases", "postgresql", "firewall"]

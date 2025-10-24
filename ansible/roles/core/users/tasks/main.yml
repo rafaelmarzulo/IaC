@@ -1,0 +1,43 @@
+---
+# tasks file for core/users
+
+- name: "Users | Garantir que os grupos de usuários existam"
+  ansible.builtin.group:
+    name: "{{ item.groups }}"
+    state: "present"
+  become: true
+  when: item.groups is defined and item.groups != ""
+  loop: "{{ users_to_create }}"
+  tags: ["users", "configuration"]
+
+- name: "Users | Criar/gerenciar contas de usuário"
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    state: "{{ item.state }}"
+    groups: "{{ item.groups | default(omit) }}"
+    shell: "/bin/bash"
+    create_home: true
+  become: true
+  loop: "{{ users_to_create }}"
+  tags: ["users", "configuration"]
+
+- name: "Users | Distribuir chaves SSH autorizadas"
+  ansible.posix.authorized_key:
+    user: "{{ item.username }}"
+    key: "{{ item.ssh_keys | join('\n') }}"
+    state: "present"
+    exclusive: true  # Remove outras chaves não listadas
+  become: true
+  when: item.ssh_keys is defined
+  loop: "{{ users_to_create }}"
+  tags: ["users", "configuration", "ssh"]
+
+- name: "Users | Remover contas de usuário indesejadas"
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    state: "absent"
+    remove: true  # Remove o home directory
+  become: true
+  loop: "{{ users_to_remove }}"
+  tags: ["users", "configuration"]
+

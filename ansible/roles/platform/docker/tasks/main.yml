@@ -1,0 +1,89 @@
+---
+# tasks file for platform/docker
+
+- name: "Docker | Garantir que pacotes de pré-requisito estejam instalados"
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: "present"
+    update_cache: true
+  become: true
+  when: docker_enabled and ansible_os_family == "Debian"
+  tags: ["docker", "packages"]
+
+- name: "Docker | Adicionar chave GPG oficial do Docker"
+  ansible.builtin.apt_key:
+    url: "https://download.docker.com/linux/ubuntu/gpg"
+    state: "present"
+    keyring: "/etc/apt/keyrings/docker.gpg"
+  become: true
+  when: docker_enabled and ansible_os_family == "Debian"
+  tags: ["docker", "repository"]
+
+- name: "Docker | Adicionar repositório Docker APT"
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: "present"
+    filename: "docker"
+  become: true
+  when: docker_enabled and ansible_os_family == "Debian"
+  tags: ["docker", "repository"]
+
+- name: "Docker | Instalar Docker Engine"
+  ansible.builtin.apt:
+    name:
+      - docker-ce={{ docker_version }}
+      - docker-ce-cli={{ docker_version }}
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: "present"
+    update_cache: true
+  become: true
+  when: docker_enabled and ansible_os_family == "Debian"
+  tags: ["docker", "packages"]
+
+- name: "Docker | Criar diretório para configuração do daemon"
+  ansible.builtin.file:
+    path: "/etc/docker"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  become: true
+  when: docker_enabled
+  tags: ["docker", "configuration"]
+
+- name: "Docker | Configurar daemon do Docker (daemon.json)"
+  ansible.builtin.template:
+    src: "daemon.json.j2"
+    dest: "/etc/docker/daemon.json"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  when: docker_enabled
+  notify: "Reiniciar docker"
+  tags: ["docker", "configuration"]
+
+- name: "Docker | Garantir que o serviço Docker esteja rodando e habilitado"
+  ansible.builtin.service:
+    name: "docker"
+    state: "started"
+    enabled: true
+  become: true
+  when: docker_enabled
+  tags: ["docker", "service"]
+
+- name: "Docker | Adicionar usuários ao grupo docker"
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "docker"
+    append: true
+  become: true
+  loop: "{{ docker_users_to_add }}"
+  when: docker_enabled and docker_users_to_add | length > 0
+  tags: ["docker", "users"]

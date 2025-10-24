@@ -1,0 +1,57 @@
+---
+# tasks file for core/network
+
+- name: "Network | Garantir que UFW esteja instalado"
+  ansible.builtin.package:
+    name: "ufw"
+    state: "present"
+  become: true
+  when: network_firewall_enabled
+  tags: ["network", "firewall"]
+
+- name: "Network | Configurar política padrão de entrada do UFW"
+  community.general.ufw:
+    direction: "incoming"
+    policy: "{{ network_firewall_default_incoming_policy }}"
+  become: true
+  when: network_firewall_enabled
+  tags: ["network", "firewall"]
+
+- name: "Network | Configurar política padrão de saída do UFW"
+  community.general.ufw:
+    direction: "outgoing"
+    policy: "{{ network_firewall_default_outgoing_policy }}"
+  become: true
+  when: network_firewall_enabled
+  tags: ["network", "firewall"]
+
+- name: "Network | Adicionar regras de firewall permitidas"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ item.port | default(omit) }}"
+    proto: "{{ item.proto | default(omit) }}"
+    app: "{{ item.app | default(omit) }}"
+    comment: "{{ item.comment | default(omit) }}"
+  become: true
+  loop: "{{ network_firewall_allowed_rules }}"
+  when: network_firewall_enabled
+  tags: ["network", "firewall"]
+
+- name: "Network | Habilitar UFW"
+  community.general.ufw:
+    state: "enabled"
+  become: true
+  when: network_firewall_enabled
+  notify: "Reiniciar UFW"
+  tags: ["network", "firewall"]
+
+- name: "Network | Configurar resolv.conf com servidores DNS"
+  ansible.builtin.template:
+    src: "resolv.conf.j2"
+    dest: "/etc/resolv.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  notify: "reload ufw" # Notifica para recarregar UFW caso haja alguma regra de DNS
+  tags: ["network", "dns"]

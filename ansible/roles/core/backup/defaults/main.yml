@@ -1,0 +1,47 @@
+---
+# defaults file for core/backup
+
+# --- Configurações Gerais ---
+backup_enabled: true
+backup_client: "rsync"
+
+# --- Fontes de Backup ---
+# Lista de diretórios/arquivos no servidor local a serem incluídos no backup.
+# Ex: ["/etc", "/var/www", "/home"]
+backup_sources:
+  - /etc
+  - /var/www
+  - /home
+
+# Lista de padrões para excluir arquivos/diretórios do backup.
+# Ex: ["*.log", "cache/", "/var/cache"]
+backup_exclude_files:
+  - "*.log"
+  - "/var/cache"
+  - "/tmp/*"
+
+# --- Destino do Backup (Servidor Remoto via SSH) ---
+backup_destination_host: "backup.example.com" # Hostname ou IP do servidor de backup
+backup_destination_user: "backupuser"         # Usuário SSH no servidor de backup
+backup_destination_path: "/mnt/backups/{{ ansible_hostname }}" # Caminho no servidor de backup
+backup_ssh_port: 22                           # Porta SSH para conexão
+
+# --- Agendamento (Cron) ---
+backup_cron_schedule: "0 2 * * *" # Diariamente às 2h da manhã
+
+# --- Comandos Pré/Pós Backup ---
+# Lista de comandos a serem executados ANTES do backup (ex: mysqldump)
+backup_pre_commands: []
+  # - "mkdir -p /tmp/db_dumps"
+  # - "mysqldump -u root -p{{ mysql_root_password }} minha_base > /tmp/db_dumps/minha_base.sql"
+
+# Lista de comandos a serem executados DEPOIS do backup (ex: limpeza de dumps temporários)
+backup_post_commands: []
+  # - "rm -rf /tmp/db_dumps"
+
+# --- Retenção de Backup (para script de limpeza no destino) ---
+backup_retention_days: 7 # Manter backups por 7 dias
+
+# --- Notificações (Opcional) ---
+backup_notification_email: "admin@example.com"
+backup_notification_on_failure: true

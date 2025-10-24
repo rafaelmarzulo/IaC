@@ -1,0 +1,18 @@
+# This is a Zabbix agent configuration file.
+# It is managed by Ansible. Do not edit manually.
+
+PidFile=/run/zabbix/zabbix_agentd.pid
+LogFile={{ zabbix_agent_log_file }}
+LogFileSize={{ zabbix_agent_log_file_size }}
+DebugLevel={{ zabbix_agent_debug_level }}
+Timeout={{ zabbix_agent_timeout }}
+
+Server={{ zabbix_agent_server_ip }}
+ServerActive={{ zabbix_agent_server_active_ip }}
+Hostname={{ zabbix_agent_hostname }}
+
+ListenPort={{ zabbix_agent_listen_port }}
+
+Include={{ zabbix_agent_include_dir }}/*.conf
+
+# UserParameter=...

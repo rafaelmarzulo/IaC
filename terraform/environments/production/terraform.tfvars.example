@@ -1,0 +1,49 @@
+# =============================================================================
+# Production Environment Configuration
+# =============================================================================
+
+# Environment settings
+environment   = "production"
+project_name  = "myproject"
+
+# Proxmox configuration
+target_node     = "proxmox-node1"
+template_name   = "ubuntu-22.04-template"
+template_id     = "1010"
+
+# VM configuration
+vm_count        = 3
+vm_name_prefix  = "prod-vm"
+vmid_start      = 3100
+
+vm_defaults = {
+  cores     = 4
+  memory    = 8192
+  disk_size = "80G"
+  storage   = "local-lvm"
+}
+
+# Network configuration (isolated production network)
+network_bridge = "vmbr1"
+ip_base        = "10.11.95"
+ip_start       = 100
+ip_cidr        = 24
+ip_gateway     = "10.11.95.1"
+nameserver     = "1.1.1.1 8.8.8.8"
+
+# Cloud-init configuration
+ci_user     = "ubuntu"
+ci_password = ""
+ssh_keys    = <<-EOT
+  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... admin@example.com
+  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQ... backup@example.com
+EOT
+
+# Tags and metadata
+additional_tags = ["production", "critical", "dual-approval"]
+created_by     = "terraform-production"
+
+# Feature flags
+enable_cloud_init = true
+enable_backup     = true
+enable_monitoring = true

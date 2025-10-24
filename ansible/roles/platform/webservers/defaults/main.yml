@@ -1,0 +1,40 @@
+---
+# defaults file for platform/webservers
+
+webservers_nginx_enabled: true
+
+# --- Nginx Installation ---
+webservers_nginx_package_name: "nginx"
+
+# --- Nginx Main Configuration ---
+# Caminho para o arquivo de configuração principal do Nginx
+webservers_nginx_conf_path: "/etc/nginx/nginx.conf"
+
+# Usuário e grupo sob os quais o Nginx será executado
+webservers_nginx_user: "www-data"
+webservers_nginx_group: "www-data"
+
+# Número de worker processes (geralmente igual ao número de CPUs)
+webservers_nginx_worker_processes: "auto"
+
+# --- Server Blocks (Virtual Hosts) ---
+# Lista de server blocks a serem configurados.
+# Cada item pode ser um dicionário com 'filename' e 'template' ou 'content'.
+# Exemplo:
+# webservers_nginx_server_blocks:
+#   - filename: "default.conf"
+#     template: "my_default_site.conf.j2"
+#   - filename: "api.example.com.conf"
+#     content: |
+#       server {
+#         listen 80;
+#         server_name api.example.com;
+#         location / {
+#           proxy_pass http://backend_api;
+#         }
+#       }
+webservers_nginx_server_blocks: []
+
+# --- Firewall Ports (se não estiver usando core/network) ---
+# webservers_nginx_open_http_port: true
+# webservers_nginx_open_https_port: true

@@ -1,0 +1,12 @@
+---
+# tasks for CIS Section 2: Services
+
+- name: "2.1.1 | Desabilitar serviços desnecessários"
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: "stopped"
+    enabled: false
+  become: true
+  loop: "{{ cis_disable_unnecessary_services }}"
+  ignore_errors: true # Alguns serviços podem não existir
+  tags: ["cis", "cis_2.1.1"]

@@ -1,0 +1,9 @@
+---
+# handlers file for platform/databases
+
+- name: "Reiniciar postgresql"
+  ansible.builtin.service:
+    name: "postgresql"
+    state: "restarted"
+    enabled: true
+  become: true

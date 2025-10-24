@@ -1,0 +1,9 @@
+---
+# handlers file for core/monitoring
+
+- name: "Reiniciar node_exporter"
+  ansible.builtin.service:
+    name: "node_exporter"
+    state: "restarted"
+    enabled: true
+  become: true

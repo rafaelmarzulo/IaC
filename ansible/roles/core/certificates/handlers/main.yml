@@ -1,0 +1,16 @@
+---
+# handlers file for core/certificates
+
+- name: "Reiniciar Nginx"
+  ansible.builtin.service:
+    name: "nginx"
+    state: "restarted"
+  listen: "restart webserver"
+  become: true
+
+- name: "Reiniciar Apache"
+  ansible.builtin.service:
+    name: "apache2"
+    state: "restarted"
+  listen: "restart webserver"
+  become: true

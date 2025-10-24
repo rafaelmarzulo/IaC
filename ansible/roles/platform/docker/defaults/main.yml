@@ -1,0 +1,24 @@
+---
+# defaults file for platform/docker
+
+docker_enabled: true
+
+# --- Docker Engine Installation ---
+docker_version: "5:24.0.7-1~ubuntu.22.04~jammy" # Versão específica do Docker Engine
+docker_compose_version: "v2.23.0" # Versão específica do Docker Compose
+
+# --- Docker Daemon Configuration ---
+# Configurações para /etc/docker/daemon.json
+docker_daemon_config:
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  # registry-mirrors:
+  #   - "https://your-registry-mirror.com"
+
+# --- Usuários a serem adicionados ao grupo 'docker' ---
+# Permite que esses usuários executem comandos docker sem sudo
+docker_users_to_add: []
+  # - "rafael"
+  # - "devops"

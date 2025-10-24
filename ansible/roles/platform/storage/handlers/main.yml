@@ -1,0 +1,15 @@
+---
+# handlers file for platform/storage
+
+- name: "Reiniciar nfs-kernel-server"
+  ansible.builtin.service:
+    name: "nfs-kernel-server"
+    state: "restarted"
+    enabled: true
+  become: true
+  when: storage_nfs_is_server
+
+- name: "Recarregar montagens NFS"
+  ansible.builtin.command: "mount -a"
+  become: true
+  when: storage_nfs_is_client

@@ -1,0 +1,54 @@
+---
+# tasks file for core/backup
+
+- name: "Backup | Garantir que rsync esteja instalado"
+  ansible.builtin.package:
+    name: "rsync"
+    state: "present"
+  become: true
+  when: backup_enabled
+  tags: ["backup", "packages"]
+
+- name: "Backup | Criar diretório para scripts de backup"
+  ansible.builtin.file:
+    path: "/usr/local/bin/backup"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  become: true
+  when: backup_enabled
+  tags: ["backup", "configuration"]
+
+- name: "Backup | Implantar script de backup"
+  ansible.builtin.template:
+    src: "backup.sh.j2"
+    dest: "/usr/local/bin/backup/run_backup.sh"
+    owner: "root"
+    group: "root"
+    mode: "0700"
+  become: true
+  when: backup_enabled
+  tags: ["backup", "configuration"]
+
+- name: "Backup | Configurar cron job para backup"
+  ansible.builtin.cron:
+    name: "Automated Backup"
+    minute: "{{ backup_cron_schedule.split(' ')[0] }}"
+    hour: "{{ backup_cron_schedule.split(' ')[1] }}"
+    day: "{{ backup_cron_schedule.split(' ')[2] }}"
+    month: "{{ backup_cron_schedule.split(' ')[3] }}"
+    weekday: "{{ backup_cron_schedule.split(' ')[4] }}"
+    job: "/usr/local/bin/backup/run_backup.sh"
+    user: "root"
+  become: true
+  when: backup_enabled
+  tags: ["backup", "cron"]
+
+- name: "Backup | Remover cron job de backup se desabilitado"
+  ansible.builtin.cron:
+    name: "Automated Backup"
+    state: "absent"
+  become: true
+  when: not backup_enabled
+  tags: ["backup", "cron"]

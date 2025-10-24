@@ -1,0 +1,64 @@
+# This file is managed by Ansible. Do not edit manually.
+
+# Audit rules for CIS compliance
+
+# 1. Audit system startup and shutdown
+-w /etc/init.d/ -p wa -k system-startup
+-w /etc/inittab -p wa -k system-startup
+
+# 2. Audit all attempts to alter time
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -k time-change
+-a always,exit -F arch=b32 -S adjtimex -S settimeofday -k time-change
+-a always,exit -F arch=b64 -S clock_settime -k time-change
+-a always,exit -F arch=b32 -S clock_settime -k time-change
+-w /etc/localtime -p wa -k time-change
+
+# 3. Audit system administrator actions
+-w /etc/sudoers -p wa -k actions
+-w /etc/sudoers.d/ -p wa -k actions
+
+# 4. Audit changes to system administration scope (sudo, su)
+-a always,exit -F arch=b64 -S execve -F key=sudo
+-a always,exit -F arch=b32 -S execve -F key=sudo
+-a always,exit -F arch=b64 -S execve -F key=su
+-a always,exit -F arch=b32 -S execve -F key=su
+
+# 5. Audit login and logout
+-w /var/log/faillog -p wa -k logins
+-w /var/log/lastlog -p wa -k logins
+-w /var/log/tallylog -p wa -k logins
+
+# 6. Audit session initiation
+-w /var/run/utmp -p wa -k session
+-w /var/log/wtmp -p wa -k session
+-w /var/log/btmp -p wa -k session
+
+# 7. Audit discretionary access control permission modification (chmod, chown, etc.)
+-a always,exit -F arch=b64 -S chmod -S fchmod -S fchmodat -k perm_mod
+-a always,exit -F arch=b32 -S chmod -S fchmod -S fchmodat -k perm_mod
+-a always,exit -F arch=b64 -S chown -S fchown -S fchownat -S lchown -k perm_mod
+-a always,exit -F arch=b32 -S chown -S fchown -S fchownat -S lchown -k perm_mod
+-a always,exit -F arch=b64 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -k perm_mod
+-a always,exit -F arch=b32 -S setxattr -S lsetxattr -S fsetxattr -S removexattr -S lremovexattr -S fremovexattr -k perm_mod
+
+# 8. Audit successful and unsuccessful attempts to access files and directories
+-a always,exit -F arch=b64 -S creat -S open -S openat -S truncate -S ftruncate -k access
+-a always,exit -F arch=b32 -S creat -S open -S openat -S truncate -S ftruncate -k access
+
+# 9. Audit mount and unmount
+-a always,exit -F arch=b64 -S mount -S umount -S umount2 -k mount
+-a always,exit -F arch=b32 -S mount -S umount -S umount2 -k mount
+
+# 10. Audit file deletion
+-a always,exit -F arch=b64 -S unlink -S unlinkat -S rename -S renameat -k delete
+-a always,exit -F arch=b32 -S unlink -S unlinkat -S rename -S renameat -k delete
+
+# 11. Audit kernel module loading and unloading
+-w /sbin/insmod -p x -k modules
+-w /sbin/rmmod -p x -k modules
+-w /sbin/modprobe -p x -k modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -k modules
+-a always,exit -F arch=b32 -S init_module -S delete_module -k modules
+
+# Immutable rules (must be last)
+-e 2

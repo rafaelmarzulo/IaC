@@ -1,0 +1,32 @@
+---
+# tasks file for security/secrets_management
+
+- name: "Secrets Management | Garantir que Ansible esteja instalado (inclui ansible-vault)"
+  ansible.builtin.package:
+    name: "ansible"
+    state: "present"
+  become: true
+  tags: ["secrets_management", "ansible"]
+
+- name: "Secrets Management | Exibir lembrete sobre o uso do Ansible Vault"
+  ansible.builtin.debug:
+    msg: |
+      ================================================================================
+      LEMBRETE IMPORTANTE: Gerenciamento de Segredos com Ansible Vault
+      --------------------------------------------------------------------------------
+      Este role garante que o Ansible Vault esteja disponível no sistema.
+      No entanto, o uso do Vault é uma prática de fluxo de trabalho e não uma
+      configuração de servidor.
+
+      Para gerenciar segredos:
+      1. Crie um arquivo Vault: `ansible-vault create <nome_do_arquivo>.yml`
+      2. Edite um arquivo Vault: `ansible-vault edit <nome_do_arquivo>.yml`
+      3. Criptografe uma string: `ansible-vault encrypt_string 'minha_senha_secreta' --name 'minha_variavel'`
+
+      Sempre use `--vault-password-file` ou `--ask-vault-pass` ao executar playbooks
+      que utilizam segredos criptografados.
+
+      Considere integrar o gerenciamento da senha do Vault com seu pipeline CI/CD
+      (ex: GitHub Actions Secrets, GitLab CI/CD Variables).
+      ================================================================================
+  tags: ["secrets_management", "info"]

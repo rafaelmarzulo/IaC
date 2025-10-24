@@ -1,0 +1,28 @@
+---
+# defaults file for platform/ci_cd
+
+ci_cd_runner_enabled: true
+
+# --- GitHub Actions Runner Configuration ---
+ci_cd_runner_version: "2.311.0" # Versão do GitHub Actions Runner
+ci_cd_runner_install_dir: "/opt/actions-runner"
+ci_cd_runner_user: "actions-runner"
+ci_cd_runner_group: "actions-runner"
+
+# URL do repositório GitHub onde o runner será registrado
+# Ex: "https://github.com/your-org/your-repo"
+ci_cd_runner_github_url: ""
+
+# TOKEN DE REGISTRO DO RUNNER (ALTAMENTE SENSÍVEL!)
+# ESTA VARIÁVEL NUNCA DEVE SER DEFINIDA AQUI OU EM QUALQUER LUGAR NO CONTROLE DE VERSÃO.
+# DEVE SER INJETADA DE FORMA SEGURA (ex: GitHub Secrets, Ansible Vault, HashiCorp Vault).
+ci_cd_runner_registration_token: ""
+
+# Labels para o runner (opcional)
+ci_cd_runner_labels: []
+  # - "self-hosted"
+  # - "linux"
+  # - "ubuntu"
+
+# Nome do runner (se vazio, será o hostname do servidor)
+ci_cd_runner_name: ""

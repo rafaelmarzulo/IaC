@@ -1,0 +1,345 @@
+name: "Terraform CI/CD - Proxmox Infrastructure"
+
+on:
+  push:
+    branches: [ main, staging, develop ]
+    paths:
+      - 'terraform/**'
+      - '.github/workflows/terraform-ci.yml'
+  pull_request:
+    branches: [ main, staging ]
+    paths:
+      - 'terraform/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      action:
+        description: 'Terraform action'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  TF_VERSION: '1.9.0'
+  TF_CLI_ARGS: '-no-color'
+  TF_IN_AUTOMATION: 'true'
+
+jobs:
+  # =============================================================================
+  # VALIDATION STAGE (Cloud Runners)
+  # =============================================================================
+  validate:
+    name: "Validation & Format Check"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        working-directory: terraform
+
+      - name: Terraform Init (validation only)
+        run: terraform init -backend=false
+        working-directory: terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform
+
+  # =============================================================================
+  # SECURITY SCANNING STAGE (Cloud Runners)
+  # =============================================================================
+  security:
+    name: "Security Scanning"
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform
+          framework: terraform
+          soft_fail: false
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'terraform'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # DETERMINE ENVIRONMENT
+  # =============================================================================
+  setup:
+    name: "Setup Environment"
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.environment }}
+      auto_apply: ${{ steps.env.outputs.auto_apply }}
+    steps:
+      - name: Determine Environment
+        id: env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "auto_apply=false" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+            echo "environment=development" >> $GITHUB_OUTPUT
+            echo "auto_apply=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/staging" ]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "auto_apply=false" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "auto_apply=false" >> $GITHUB_OUTPUT
+          else
+            echo "environment=development" >> $GITHUB_OUTPUT
+            echo "auto_apply=false" >> $GITHUB_OUTPUT
+          fi
+
+  # =============================================================================
+  # TERRAFORM PLAN (Self-Hosted Runner)
+  # =============================================================================
+  plan:
+    name: "Terraform Plan (${{ needs.setup.outputs.environment }})"
+    runs-on: self-hosted
+    needs: [validate, security, setup]
+    environment: ${{ needs.setup.outputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment Variables
+        run: |
+          echo "ENVIRONMENT=${{ needs.setup.outputs.environment }}" >> $GITHUB_ENV
+
+          # Set environment-specific variables
+          case "${{ needs.setup.outputs.environment }}" in
+            "development")
+              echo "TF_VAR_environment=dev" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_id=${{ secrets.PROXMOX_TOKEN_ID_DEV }}" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_secret=${{ secrets.PROXMOX_TOKEN_SECRET_DEV }}" >> $GITHUB_ENV
+              ;;
+            "staging")
+              echo "TF_VAR_environment=staging" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_id=${{ secrets.PROXMOX_TOKEN_ID_STAGING }}" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_secret=${{ secrets.PROXMOX_TOKEN_SECRET_STAGING }}" >> $GITHUB_ENV
+              ;;
+            "production")
+              echo "TF_VAR_environment=production" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_id=${{ secrets.PROXMOX_TOKEN_ID_PROD }}" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_secret=${{ secrets.PROXMOX_TOKEN_SECRET_PROD }}" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="path=terraform-${{ env.ENVIRONMENT }}.tfstate"
+        working-directory: terraform
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var-file="environments/${{ env.ENVIRONMENT }}/terraform.tfvars" \
+            -out="tfplan-${{ env.ENVIRONMENT }}" \
+            -detailed-exitcode
+        working-directory: terraform
+        continue-on-error: true
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ needs.setup.outputs.environment }}
+          path: terraform/tfplan-${{ needs.setup.outputs.environment }}
+          retention-days: 30
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `
+            ## Terraform Plan Results for ${{ needs.setup.outputs.environment }}
+
+            **Plan Status**: ${{ steps.plan.outcome }}
+            **Environment**: ${{ needs.setup.outputs.environment }}
+            **Commit**: ${{ github.sha }}
+
+            <details>
+            <summary>Click to expand plan output</summary>
+
+            Plan completed. Check the action logs for detailed output.
+
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            });
+
+  # =============================================================================
+  # TERRAFORM APPLY (Self-Hosted Runner)
+  # =============================================================================
+  apply:
+    name: "Terraform Apply (${{ needs.setup.outputs.environment }})"
+    runs-on: self-hosted
+    needs: [plan, setup]
+    environment: ${{ needs.setup.outputs.environment }}
+    if: |
+      (needs.setup.outputs.auto_apply == 'true' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment Variables
+        run: |
+          echo "ENVIRONMENT=${{ needs.setup.outputs.environment }}" >> $GITHUB_ENV
+
+          case "${{ needs.setup.outputs.environment }}" in
+            "development")
+              echo "TF_VAR_environment=dev" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_id=${{ secrets.PROXMOX_TOKEN_ID_DEV }}" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_secret=${{ secrets.PROXMOX_TOKEN_SECRET_DEV }}" >> $GITHUB_ENV
+              ;;
+            "staging")
+              echo "TF_VAR_environment=staging" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_id=${{ secrets.PROXMOX_TOKEN_ID_STAGING }}" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_secret=${{ secrets.PROXMOX_TOKEN_SECRET_STAGING }}" >> $GITHUB_ENV
+              ;;
+            "production")
+              echo "TF_VAR_environment=production" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_id=${{ secrets.PROXMOX_TOKEN_ID_PROD }}" >> $GITHUB_ENV
+              echo "TF_VAR_proxmox_token_secret=${{ secrets.PROXMOX_TOKEN_SECRET_PROD }}" >> $GITHUB_ENV
+              ;;
+          esac
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ needs.setup.outputs.environment }}
+          path: terraform
+
+      - name: Backup State File (Production Only)
+        if: needs.setup.outputs.environment == 'production'
+        run: |
+          if [ -f "terraform-production.tfstate" ]; then
+            cp terraform-production.tfstate "terraform-production.tfstate.backup.$(date +%Y%m%d-%H%M%S)"
+          fi
+        working-directory: terraform
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="path=terraform-${{ env.ENVIRONMENT }}.tfstate"
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve "tfplan-${{ env.ENVIRONMENT }}"
+        working-directory: terraform
+
+      - name: Generate Infrastructure Outputs
+        id: outputs
+        run: |
+          terraform output -json > infrastructure-outputs-${{ env.ENVIRONMENT }}.json
+        working-directory: terraform
+
+      - name: Upload Infrastructure Outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-outputs-${{ needs.setup.outputs.environment }}
+          path: terraform/infrastructure-outputs-${{ needs.setup.outputs.environment }}.json
+          retention-days: 90
+
+      - name: Create Deployment Tag (Production Only)
+        if: needs.setup.outputs.environment == 'production'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag "prod-deploy-$(date +%Y%m%d-%H%M%S)"
+          git push origin --tags
+
+  # =============================================================================
+  # HEALTH CHECKS
+  # =============================================================================
+  health_check:
+    name: "Post-Deployment Health Check"
+    runs-on: self-hosted
+    needs: [apply, setup]
+    if: |
+      success() &&
+      ((needs.setup.outputs.auto_apply == 'true' && github.event_name == 'push') ||
+       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply'))
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test Proxmox API Connectivity
+        run: |
+          curl -k -f "${{ secrets.PROXMOX_API_URL }}/version" || exit 1
+
+      - name: Verify Infrastructure State
+        run: |
+          cd terraform
+          terraform init -backend-config="path=terraform-${{ needs.setup.outputs.environment }}.tfstate"
+          terraform refresh -var-file="environments/${{ needs.setup.outputs.environment }}/terraform.tfvars"
+        env:
+          TF_VAR_proxmox_token_id: ${{ secrets.PROXMOX_TOKEN_ID_DEV }}
+          TF_VAR_proxmox_token_secret: ${{ secrets.PROXMOX_TOKEN_SECRET_DEV }}
+
+      - name: Generate Health Report
+        run: |
+          echo "Infrastructure deployment completed successfully" > health-report.txt
+          echo "Environment: ${{ needs.setup.outputs.environment }}" >> health-report.txt
+          echo "Timestamp: $(date)" >> health-report.txt
+          echo "Commit: ${{ github.sha }}" >> health-report.txt
+
+      - name: Upload Health Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: health-report-${{ needs.setup.outputs.environment }}
+          path: health-report.txt
+          retention-days: 30

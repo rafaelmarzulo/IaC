@@ -1,0 +1,47 @@
+---
+# defaults file for platform/container_registry
+
+container_registry_harbor_enabled: true
+
+# --- Harbor Installation ---
+container_registry_harbor_version: "2.10.0" # Versão do Harbor
+container_registry_harbor_install_dir: "/opt/harbor"
+container_registry_harbor_hostname: "harbor.example.com" # Hostname para acessar o Harbor
+
+# --- Portas ---
+container_registry_harbor_http_port: 80
+container_registry_harbor_https_port: 443
+container_registry_harbor_ui_port: 8443 # Porta para a UI se HTTPS for 443
+
+# --- Certificados SSL/TLS ---
+# Se true, o Harbor gerará certificados auto-assinados (APENAS PARA TESTES/DEV!)
+container_registry_harbor_generate_certs: true
+
+# Caminhos para certificados existentes (se container_registry_harbor_generate_certs for false)
+# container_registry_harbor_cert_path: "/path/to/your/harbor.crt"
+# container_registry_harbor_key_path: "/path/to/your/harbor.key"
+# container_registry_harbor_ca_path: "/path/to/your/ca.crt"
+
+# --- Configurações de Banco de Dados (interno ou externo) ---
+# Usar banco de dados interno (PostgreSQL e Redis) ou externo
+container_registry_harbor_db_internal: true
+# Se for externo, configurar:
+# container_registry_harbor_db_host: "db.example.com"
+# container_registry_harbor_db_port: 5432
+# container_registry_harbor_db_user: "harbor_db_user"
+# container_registry_harbor_db_password: "{{ vault_harbor_db_password }}"
+# container_registry_harbor_db_name: "harbor"
+
+# --- Configurações de Armazenamento (interno ou externo) ---
+# Usar armazenamento interno (filesystem) ou externo (S3, Azure Blob, etc.)
+container_registry_harbor_storage_internal: true
+# Se for externo, configurar:
+# container_registry_harbor_storage_provider: "s3"
+# container_registry_harbor_storage_s3_region: "us-east-1"
+# container_registry_harbor_storage_s3_bucket: "harbor-bucket"
+# container_registry_harbor_storage_s3_accesskey: "{{ vault_harbor_s3_accesskey }}"
+# container_registry_harbor_storage_s3_secretkey: "{{ vault_harbor_s3_secretkey }}"
+
+# --- Admin Password (ALTAMENTE SENSÍVEL!) ---
+# DEVE SER GERENCIADA VIA ANSIBLE VAULT!
+container_registry_harbor_admin_password: "{{ vault_harbor_admin_password }}"

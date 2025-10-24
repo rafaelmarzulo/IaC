@@ -1,0 +1,15 @@
+galaxy_info:
+  author: "Gemini AI for @rafael"
+  description: "Role para gerenciar máquinas virtuais no Proxmox VE."
+  company: "N/A"
+  license: "MIT"
+
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: GenericLinux
+      versions:
+        - all
+
+dependencies:
+  - role: core/baseline

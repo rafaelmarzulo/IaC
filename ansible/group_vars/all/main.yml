@@ -1,0 +1,11 @@
+# Variáveis globais aplicadas a todos os hosts
+
+# Exemplo: Configurações de NTP
+ntp_servers:
+  - 0.pool.ntp.org
+  - 1.pool.ntp.org
+
+# Gestão de usuários padrão
+admin_users:
+  - name: "rafael"
+    ssh_key: "ssh-ed25519 AAAA... rafael@gemini"

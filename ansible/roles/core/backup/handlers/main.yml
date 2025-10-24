@@ -1,0 +1,10 @@
+---
+# handlers file for core/backup
+
+# Exemplo de handler para notificação
+# - name: "Enviar notificação de backup"
+#   ansible.builtin.mail:
+#     subject: "Backup {{ ansible_hostname }} - {{ backup_status }}"
+#     body: "Detalhes do backup..."
+#     to: "{{ backup_notification_email }}"
+#   when: backup_notification_email is defined and backup_notification_email != ""

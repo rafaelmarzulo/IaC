@@ -1,0 +1,125 @@
+---
+# tasks file for platform/messaging
+
+- name: "Messaging | Adicionar chave GPG do repositório Erlang Solutions"
+  ansible.builtin.apt_key:
+    url: "{{ messaging_erlang_repo_key_url }}"
+    state: "present"
+  become: true
+  when: messaging_rabbitmq_enabled and ansible_os_family == "Debian"
+  tags: ["messaging", "erlang", "repository"]
+
+- name: "Messaging | Adicionar repositório Erlang Solutions"
+  ansible.builtin.apt_repository:
+    repo: "deb {{ messaging_erlang_repo_url }} {{ ansible_distribution_release }} {{ messaging_erlang_version }}erlang"
+    state: "present"
+    filename: "erlang-solutions"
+  become: true
+  when: messaging_rabbitmq_enabled and ansible_os_family == "Debian"
+  tags: ["messaging", "erlang", "repository"]
+
+- name: "Messaging | Instalar Erlang"
+  ansible.builtin.package:
+    name: "erlang"
+    state: "present"
+    update_cache: true
+  become: true
+  when: messaging_rabbitmq_enabled
+  tags: ["messaging", "erlang", "packages"]
+
+- name: "Messaging | Adicionar chave GPG do repositório RabbitMQ"
+  ansible.builtin.apt_key:
+    url: "{{ messaging_rabbitmq_repo_key_url }}"
+    state: "present"
+  become: true
+  when: messaging_rabbitmq_enabled and ansible_os_family == "Debian"
+  tags: ["messaging", "rabbitmq", "repository"]
+
+- name: "Messaging | Adicionar repositório RabbitMQ"
+  ansible.builtin.apt_repository:
+    repo: "deb {{ messaging_rabbitmq_repo_url }} {{ ansible_distribution_release }} main"
+    state: "present"
+    filename: "rabbitmq"
+  become: true
+  when: messaging_rabbitmq_enabled and ansible_os_family == "Debian"
+  tags: ["messaging", "rabbitmq", "repository"]
+
+- name: "Messaging | Instalar RabbitMQ Server"
+  ansible.builtin.package:
+    name: "rabbitmq-server"
+    state: "present"
+    update_cache: true
+  become: true
+  when: messaging_rabbitmq_enabled
+  tags: ["messaging", "rabbitmq", "packages"]
+
+- name: "Messaging | Habilitar plugins do RabbitMQ"
+  community.rabbitmq.rabbitmq_plugin:
+    names: "{{ messaging_rabbitmq_enabled_plugins }}"
+    state: "enabled"
+  become: true
+  when: messaging_rabbitmq_enabled and messaging_rabbitmq_enabled_plugins | length > 0
+  notify: "Reiniciar rabbitmq-server"
+  tags: ["messaging", "rabbitmq", "plugins"]
+
+- name: "Messaging | Criar vhosts do RabbitMQ"
+  community.rabbitmq.rabbitmq_vhost:
+    name: "{{ item.name }}"
+    state: "present"
+  become: true
+  loop: "{{ messaging_rabbitmq_vhosts_to_create }}"
+  when: messaging_rabbitmq_enabled and messaging_rabbitmq_vhosts_to_create | length > 0
+  tags: ["messaging", "rabbitmq", "vhosts"]
+
+- name: "Messaging | Criar usuários do RabbitMQ"
+  community.rabbitmq.rabbitmq_user:
+    user: "{{ item.name }}"
+    password: "{{ item.password }}"
+    tags: "{{ item.tags | default(omit) }}"
+    state: "present"
+  become: true
+  loop: "{{ messaging_rabbitmq_users_to_create }}"
+  when: messaging_rabbitmq_enabled and messaging_rabbitmq_users_to_create | length > 0
+  tags: ["messaging", "rabbitmq", "users"]
+
+- name: "Messaging | Definir permissões de usuários em vhosts"
+  community.rabbitmq.rabbitmq_user_permissions:
+    user: "{{ item.user }}"
+    vhost: "{{ item.vhost }}"
+    configure_priv: "{{ item.configure_priv | default('') }}"
+    read_priv: "{{ item.read_priv | default('') }}"
+    write_priv: "{{ item.write_priv | default('') }}"
+    state: "present"
+  become: true
+  loop: "{{ messaging_rabbitmq_user_permissions }}"
+  when: messaging_rabbitmq_enabled and messaging_rabbitmq_user_permissions | length > 0
+  tags: ["messaging", "rabbitmq", "permissions"]
+
+- name: "Messaging | Garantir que o serviço RabbitMQ esteja rodando e habilitado"
+  ansible.builtin.service:
+    name: "rabbitmq-server"
+    state: "started"
+    enabled: true
+  become: true
+  when: messaging_rabbitmq_enabled
+  tags: ["messaging", "rabbitmq", "service"]
+
+- name: "Messaging | Abrir porta AMQP do RabbitMQ no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ messaging_rabbitmq_listen_port }}"
+    proto: "tcp"
+    comment: "Allow RabbitMQ AMQP traffic"
+  become: true
+  when: messaging_rabbitmq_enabled
+  tags: ["messaging", "rabbitmq", "firewall"]
+
+- name: "Messaging | Abrir porta de gerenciamento do RabbitMQ no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ messaging_rabbitmq_management_port }}"
+    proto: "tcp"
+    comment: "Allow RabbitMQ Management UI traffic"
+  become: true
+  when: messaging_rabbitmq_enabled and 'rabbitmq_management' in messaging_rabbitmq_enabled_plugins
+  tags: ["messaging", "rabbitmq", "firewall"]

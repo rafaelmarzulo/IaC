@@ -1,0 +1,9 @@
+---
+# handlers file for platform/ci_cd
+
+- name: "Reiniciar actions-runner"
+  ansible.builtin.service:
+    name: "actions.runner.{{ ci_cd_runner_github_url | regex_replace('https://github.com/', '') | regex_replace('/', '.') }}.{{ ci_cd_runner_name | default(ansible_hostname) }}"
+    state: "restarted"
+    enabled: true
+  become: true

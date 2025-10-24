@@ -1,0 +1,18 @@
+galaxy_info:
+  author: "Gemini AI for @rafael"
+  description: "Role para aplicar configurações de segurança baseadas no CIS Benchmarks."
+  company: "N/A"
+  license: "MIT"
+
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+
+dependencies:
+  - role: core/hardening

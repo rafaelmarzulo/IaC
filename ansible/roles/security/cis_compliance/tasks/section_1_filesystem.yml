@@ -1,0 +1,43 @@
+---
+# tasks for CIS Section 1: Filesystem Configuration
+
+- name: "1.1.1.1 | Garantir que o sticky bit esteja definido em diretórios graváveis por todos"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    mode: "g+t,o+t"
+  become: true
+  loop:
+    - /tmp
+    - /var/tmp
+  when: cis_ensure_sticky_bit_on_world_writable
+  tags: ["cis", "cis_1.1.1.1"]
+
+- name: "1.1.2 | Restringir permissões no arquivo de configuração do GRUB"
+  ansible.builtin.file:
+    path: "/boot/grub/grub.cfg"
+    mode: "0600"
+  become: true
+  when: cis_restrict_boot_loader_permissions and ansible_os_family == "Debian"
+  tags: ["cis", "cis_1.1.2"]
+
+- name: "1.5.1 | Instalar AIDE (Advanced Intrusion Detection Environment)"
+  ansible.builtin.package:
+    name: "aide"
+    state: "present"
+  become: true
+  when: cis_install_aide
+  tags: ["cis", "cis_1.5.1"]
+
+- name: "1.5.2 | Inicializar banco de dados do AIDE"
+  ansible.builtin.command: "aide --init"
+  args:
+    creates: "/var/lib/aide/aide.db.new"
+  become: true
+  when: cis_install_aide
+  tags: ["cis", "cis_1.5.2"]
+
+- name: "1.5.2 | Mover banco de dados do AIDE para o local correto"
+  ansible.builtin.command: "mv /var/lib/aide/aide.db.new /var/lib/aide/aide.db"
+  become: true
+  when: cis_install_aide and not ansible.builtin.stat(path='/var/lib/aide/aide.db').stat.exists
+  tags: ["cis", "cis_1.5.2"]

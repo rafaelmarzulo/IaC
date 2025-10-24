@@ -1,0 +1,35 @@
+# This file is managed by Ansible. Do not edit manually.
+
+harbor_hostname: {{ container_registry_harbor_hostname }}
+
+http:
+  port: {{ container_registry_harbor_http_port }}
+https:
+  port: {{ container_registry_harbor_https_port }}
+  certificate: /etc/harbor/ssl/{{ container_registry_harbor_hostname }}.crt
+  private_key: /etc/harbor/ssl/{{ container_registry_harbor_hostname }}.key
+
+# Admin password for Harbor UI. DO NOT USE IN PRODUCTION WITHOUT VAULT!
+harbor_admin_password: {{ container_registry_harbor_admin_password }}
+
+# Database configuration
+{% if container_registry_harbor_db_internal %}
+database:
+  type: internal
+{% else %}
+database:
+  type: external
+  host: {{ container_registry_harbor_db_host }}
+  port: {{ container_registry_harbor_db_port }}
+  username: {{ container_registry_harbor_db_user }}
+  password: {{ container_registry_harbor_db_password }}
+  database: {{ container_registry_harbor_db_name }}
+{% endif %}
+
+# Storage configuration
+{% if container_registry_harbor_storage_internal %}
+storage_provider: filesystem
+{% else %}
+storage_provider: {{ container_registry_harbor_storage_provider }}
+# Add specific configuration for S3, Azure, etc.
+{% endif %}

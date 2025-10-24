@@ -1,0 +1,31 @@
+---
+# tasks file for cloud/proxmox
+
+- name: "Proxmox | Garantir que a coleção community.proxmox esteja instalada"
+  ansible.builtin.command: "ansible-galaxy collection install community.proxmox"
+  delegate_to: localhost
+  run_once: true
+  when: proxmox_enabled
+  tags: ["proxmox", "collection"]
+
+- name: "Proxmox | Gerenciar VMs"
+  community.proxmox.proxmox_kvm:
+    api_host: "{{ proxmox_api_host }}"
+    api_user: "{{ proxmox_api_user }}"
+    api_password: "{{ proxmox_api_password | default(omit) }}"
+    api_token_id: "{{ proxmox_api_token_id | default(omit) }}"
+    api_token_secret: "{{ proxmox_api_token_secret | default(omit) }}"
+    api_port: "{{ proxmox_api_port }}"
+    api_verify_ssl: "{{ proxmox_api_verify_ssl }}"
+    node: "{{ item.node }}"
+    vmid: "{{ item.vmid | default(omit) }}"
+    name: "{{ item.name }}"
+    template: "{{ item.template | default(omit) }}"
+    cores: "{{ item.cores | default(omit) }}"
+    memory: "{{ item.memory | default(omit) }}"
+    disk: "{{ item.disk_size | default(omit) }}"
+    net: "{{ item.network_interfaces | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  loop: "{{ proxmox_vms }}"
+  when: proxmox_enabled
+  tags: ["proxmox", "vm_management"]

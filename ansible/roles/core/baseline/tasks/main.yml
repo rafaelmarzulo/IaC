@@ -1,0 +1,23 @@
+---
+# tasks file for core/baseline
+
+- name: "Baseline | Atualizar cache de pacotes (Debian/Ubuntu)"
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  become: true
+  tags: ["baseline", "packages"]
+
+- name: "Baseline | Instalar pacotes essenciais"
+  ansible.builtin.package:
+    name: "{{ baseline_packages }}"
+    state: present
+  become: true
+  tags: ["baseline", "packages"]
+
+- name: "Baseline | Configurar fuso horário"
+  community.general.timezone:
+    name: "{{ baseline_timezone }}"
+  become: true
+  tags: ["baseline", "configuration"]

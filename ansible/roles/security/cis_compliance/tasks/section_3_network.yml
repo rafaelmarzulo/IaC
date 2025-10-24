@@ -1,0 +1,56 @@
+---
+# tasks for CIS Section 3: Network Configuration
+
+- name: "3.1.1 | Desabilitar IPv6 se não estiver em uso (opcional)"
+  ansible.builtin.sysctl:
+    name: "net.ipv6.conf.all.disable_ipv6"
+    value: "1"
+    state: "present"
+    sysctl_set: true
+    reload: true
+  become: true
+  when: cis_disable_ipv6
+  tags: ["cis", "cis_3.1.1"]
+
+- name: "3.1.2 | Desabilitar DCCP"
+  ansible.builtin.modprobe:
+    name: "dccp"
+    state: "absent"
+  become: true
+  when: cis_disable_dccp
+  tags: ["cis", "cis_3.1.2"]
+
+- name: "3.1.3 | Desabilitar SCTP"
+  ansible.builtin.modprobe:
+    name: "sctp"
+    state: "absent"
+  become: true
+  when: cis_disable_sctp
+  tags: ["cis", "cis_3.1.3"]
+
+- name: "3.1.4 | Desabilitar RDS"
+  ansible.builtin.modprobe:
+    name: "rds"
+    state: "absent"
+  become: true
+  when: cis_disable_rds
+  tags: ["cis", "cis_3.1.4"]
+
+- name: "3.1.5 | Desabilitar TIPC"
+  ansible.builtin.modprobe:
+    name: "tipc"
+    state: "absent"
+  become: true
+  when: cis_disable_tipc
+  tags: ["cis", "cis_3.1.5"]
+
+- name: "3.2.1 | Habilitar proteção contra SYN Flood (SYN Cookies)"
+  ansible.builtin.sysctl:
+    name: "net.ipv4.tcp_syncookies"
+    value: "1"
+    state: "present"
+    sysctl_set: true
+    reload: true
+  become: true
+  when: cis_enable_syn_cookies
+  tags: ["cis", "cis_3.2.1"]

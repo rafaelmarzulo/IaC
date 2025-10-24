@@ -1,0 +1,79 @@
+---
+# tasks file for platform/storage
+
+- name: "Storage | Instalar pacotes NFS (servidor)"
+  ansible.builtin.package:
+    name: "nfs-kernel-server"
+    state: "present"
+    update_cache: true
+  become: true
+  when: storage_nfs_enabled and storage_nfs_is_server
+  tags: ["storage", "nfs", "server"]
+
+- name: "Storage | Instalar pacotes NFS (cliente)"
+  ansible.builtin.package:
+    name: "nfs-common"
+    state: "present"
+    update_cache: true
+  become: true
+  when: storage_nfs_enabled and storage_nfs_is_client
+  tags: ["storage", "nfs", "client"]
+
+- name: "Storage | Configurar exportações NFS"
+  ansible.builtin.lineinfile:
+    path: "/etc/exports"
+    line: "{{ item.path }} {{ item.clients }}"
+    state: "present"
+    create: true
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  loop: "{{ storage_nfs_exports }}"
+  when: storage_nfs_enabled and storage_nfs_is_server and storage_nfs_exports | length > 0
+  notify: "Reiniciar nfs-kernel-server"
+  tags: ["storage", "nfs", "server"]
+
+- name: "Storage | Criar diretórios para montagens NFS"
+  ansible.builtin.file:
+    path: "{{ item.dest }}"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  become: true
+  loop: "{{ storage_nfs_mounts }}"
+  when: storage_nfs_enabled and storage_nfs_is_client and storage_nfs_mounts | length > 0
+  tags: ["storage", "nfs", "client"]
+
+- name: "Storage | Montar compartilhamentos NFS"
+  ansible.posix.mount:
+    src: "{{ item.src }}"
+    path: "{{ item.dest }}"
+    fstype: "nfs"
+    opts: "{{ item.opts | default('defaults') }}"
+    state: "mounted"
+  become: true
+  loop: "{{ storage_nfs_mounts }}"
+  when: storage_nfs_enabled and storage_nfs_is_client and storage_nfs_mounts | length > 0
+  tags: ["storage", "nfs", "client"]
+
+- name: "Storage | Garantir que o serviço nfs-kernel-server esteja rodando e habilitado"
+  ansible.builtin.service:
+    name: "nfs-kernel-server"
+    state: "started"
+    enabled: true
+  become: true
+  when: storage_nfs_enabled and storage_nfs_is_server
+  tags: ["storage", "nfs", "server"]
+
+- name: "Storage | Abrir portas NFS no firewall (servidor)"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ item }}"
+    proto: "tcp"
+    comment: "Allow NFS traffic"
+  become: true
+  loop: ["111", "2049", "20048"] # Portas padrão para rpcbind, nfs, mountd
+  when: storage_nfs_enabled and storage_nfs_is_server
+  tags: ["storage", "nfs", "firewall"]

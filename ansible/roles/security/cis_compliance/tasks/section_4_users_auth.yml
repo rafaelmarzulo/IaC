@@ -1,0 +1,56 @@
+---
+# tasks for CIS Section 4: User Accounts and Authentication
+
+- name: "4.1.1 | Instalar libpam-pwquality para políticas de senha"
+  ansible.builtin.package:
+    name: "libpam-pwquality"
+    state: "present"
+  become: true
+  tags: ["cis", "cis_4.1.1"]
+
+- name: "4.1.2 | Configurar política de senha (pam_pwquality)"
+  ansible.builtin.lineinfile:
+    path: "/etc/pam.d/common-password"
+    regexp: "^password\s+requisite\s+pam_pwquality.so"
+    line: "password requisite pam_pwquality.so retry=3 minlen={{ cis_password_policy_min_length }} lcredit={{ cis_password_policy_min_lower | int * -1 }} ucredit={{ cis_password_policy_min_upper | int * -1 }} dcredit={{ cis_password_policy_min_digit | int * -1 }} ocredit={{ cis_password_policy_min_special | int * -1 }}"
+    state: "present"
+  become: true
+  tags: ["cis", "cis_4.1.2"]
+
+- name: "4.1.3 | Configurar expiração de senha (chage)"
+  ansible.builtin.lineinfile:
+    path: "/etc/login.defs"
+    regexp: "^PASS_MAX_DAYS"
+    line: "PASS_MAX_DAYS {{ cis_password_policy_max_days }}"
+    state: "present"
+  become: true
+  tags: ["cis", "cis_4.1.3"]
+
+- name: "4.1.4 | Configurar aviso de expiração de senha"
+  ansible.builtin.lineinfile:
+    path: "/etc/login.defs"
+    regexp: "^PASS_WARN_AGE"
+    line: "PASS_WARN_AGE {{ cis_password_policy_warn_days }}"
+    state: "present"
+  become: true
+  tags: ["cis", "cis_4.1.4"]
+
+- name: "4.1.5 | Bloquear contas inativas"
+  ansible.builtin.lineinfile:
+    path: "/etc/default/useradd"
+    regexp: "^INACTIVE"
+    line: "INACTIVE={{ cis_password_policy_inactive_days }}"
+    state: "present"
+  become: true
+  tags: ["cis", "cis_4.1.5"]
+
+- name: "4.1.6 | Configurar bloqueio de conta após falhas de login (pam_faillock)"
+  ansible.builtin.blockinfile:
+    path: "/etc/pam.d/common-auth"
+    block: |
+      auth required pam_faillock.so preauth silent deny={{ cis_password_policy_lockout_attempts }} unlock_time={{ cis_password_policy_lockout_time }} fail_interval={{ cis_password_policy_lockout_time }}
+      auth [default=die] pam_faillock.so authfail deny={{ cis_password_policy_lockout_attempts }} unlock_time={{ cis_password_policy_lockout_time }} fail_interval={{ cis_password_policy_lockout_time }}
+      auth sufficient pam_faillock.so authsucc deny={{ cis_password_policy_lockout_attempts }} unlock_time={{ cis_password_policy_lockout_time }} fail_interval={{ cis_password_policy_lockout_time }}
+    marker: "# Ansible managed block for pam_faillock"
+  become: true
+  tags: ["cis", "cis_4.1.6"]

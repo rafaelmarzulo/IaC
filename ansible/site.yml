@@ -1,0 +1,38 @@
+---
+- name: "Configuração principal da infraestrutura"
+  hosts: all
+  become: true
+
+  pre_tasks:
+    - name: "Incluir variáveis de ambiente"
+      ansible.builtin.include_vars:
+        dir: "{{ inventory_dir }}/../group_vars/all"
+
+  roles:
+    # --- Core Roles ---
+    - { role: core/users, tags: ["core", "users"] }
+    - { role: core/hardening, tags: ["core", "hardening"] }
+    - { role: core/logging, tags: ["core", "logging"] }
+    - { role: core/network, tags: ["core", "network"] }
+    - { role: core/certificates, tags: ["core", "certificates"] }
+    - { role: core/backup, tags: ["core", "backup"] }
+
+    # --- Security Roles ---
+    - { role: security/secrets_management, tags: ["security", "secrets_management"] }
+    - { role: security/cis_compliance, tags: ["security", "cis_compliance"] }
+
+    # --- Platform Roles ---
+    - { role: platform/docker, tags: ["platform", "docker"] }
+    - { role: platform/ci_cd, tags: ["platform", "ci_cd"] }
+    - { role: platform/webservers, tags: ["platform", "webservers"] }
+    - { role: platform/databases, tags: ["platform", "databases"] }
+    - { role: platform/messaging, tags: ["platform", "messaging"] }
+    - { role: platform/storage, tags: ["platform", "storage"] }
+
+    # --- Cloud Roles ---
+    - { role: cloud/proxmox, tags: ["cloud", "proxmox"] }
+
+  post_tasks:
+    - name: "Finalização da configuração"
+      ansible.builtin.debug:
+        msg: "Configuração do host {{ inventory_hostname }} concluída com sucesso."

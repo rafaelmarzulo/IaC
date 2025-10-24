@@ -1,0 +1,70 @@
+#!/bin/bash
+# Script de backup gerado por Ansible
+# Data: $(date)
+
+BACKUP_SOURCES="{{ backup_sources | join(' ') }}"
+BACKUP_DESTINATION_HOST="{{ backup_destination_host }}"
+BACKUP_DESTINATION_USER="{{ backup_destination_user }}"
+BACKUP_DESTINATION_PATH="{{ backup_destination_path }}"
+BACKUP_SSH_PORT="{{ backup_ssh_port }}"
+BACKUP_EXCLUDE_FILES="{{ backup_exclude_files | join(' --exclude=') }}"
+BACKUP_RETENTION_DAYS="{{ backup_retention_days }}"
+
+LOG_FILE="/var/log/backup_$(date +%Y%m%d%H%M%S).log"
+
+exec > >(tee -a $LOG_FILE) 2>&1
+
+echo "[$(date)] Iniciando backup..."
+
+# --- Comandos Pré-Backup ---
+{% if backup_pre_commands %}
+for cmd in "{{ backup_pre_commands | join(';') }}"; do
+  echo "[$(date)] Executando comando pré-backup: $cmd"
+  eval "$cmd"
+  if [ $? -ne 0 ]; then
+    echo "[$(date)] ERRO: Comando pré-backup falhou. Abortando."
+    exit 1
+  fi
+done
+{% endif %}
+
+# --- Execução do Rsync ---
+RSYNC_CMD="rsync -avz --delete --progress -e 'ssh -p $BACKUP_SSH_PORT' \
+  {% if backup_exclude_files %}--exclude='${BACKUP_EXCLUDE_FILES}' \
+  {% endif %}
+  $BACKUP_SOURCES ${BACKUP_DESTINATION_USER}@${BACKUP_DESTINATION_HOST}:${BACKUP_DESTINATION_PATH}/current"
+
+echo "[$(date)] Executando rsync: $RSYNC_CMD"
+
+# Criar snapshot antes de sincronizar
+ssh -p $BACKUP_SSH_PORT ${BACKUP_DESTINATION_USER}@${BACKUP_DESTINATION_HOST} "mkdir -p ${BACKUP_DESTINATION_PATH}/$(date +%Y%m%d%H%M%S)"
+ssh -p $BACKUP_SSH_PORT ${BACKUP_DESTINATION_USER}@${BACKUP_DESTINATION_HOST} "cp -al ${BACKUP_DESTINATION_PATH}/current ${BACKUP_DESTINATION_PATH}/$(date +%Y%m%d%H%M%S)"
+
+# Sincronizar
+$RSYNC_CMD
+RSYNC_EXIT_CODE=$?
+
+if [ $RSYNC_EXIT_CODE -ne 0 ]; then
+  echo "[$(date)] ERRO: Rsync falhou com código de saída $RSYNC_EXIT_CODE."
+  exit 1
+else
+  echo "[$(date)] Rsync concluído com sucesso."
+fi
+
+# --- Comandos Pós-Backup ---
+{% if backup_post_commands %}
+for cmd in "{{ backup_post_commands | join(';') }}"; do
+  echo "[$(date)] Executando comando pós-backup: $cmd"
+  eval "$cmd"
+  if [ $? -ne 0 ]; then
+    echo "[$(date)] AVISO: Comando pós-backup falhou."
+  fi
+done
+{% endif %}
+
+# --- Limpeza de Backups Antigos no Destino ---
+echo "[$(date)] Iniciando limpeza de backups antigos (retenção: ${BACKUP_RETENTION_DAYS} dias)"
+ssh -p $BACKUP_SSH_PORT ${BACKUP_DESTINATION_USER}@${BACKUP_DESTINATION_HOST} "find ${BACKUP_DESTINATION_PATH} -maxdepth 1 -type d -mtime +${BACKUP_RETENTION_DAYS} -exec rm -rf {} \;"
+
+echo "[$(date)] Backup concluído."
+exit 0

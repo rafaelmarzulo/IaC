@@ -1,0 +1,71 @@
+---
+# tasks file for core/zabbix_agent
+
+- name: "Zabbix Agent | Adicionar chave GPG do repositório Zabbix"
+  ansible.builtin.apt_key:
+    url: "{{ zabbix_repo_key_url }}"
+    state: "present"
+  become: true
+  when: zabbix_agent_enabled and ansible_os_family == "Debian"
+  tags: ["zabbix_agent", "repository"]
+
+- name: "Zabbix Agent | Adicionar repositório Zabbix"
+  ansible.builtin.apt_repository:
+    repo: "deb {{ zabbix_repo_url }} {{ zabbix_repo_distribution }} {{ zabbix_repo_component }}"
+    state: "present"
+    filename: "zabbix"
+  become: true
+  when: zabbix_agent_enabled and ansible_os_family == "Debian"
+  tags: ["zabbix_agent", "repository"]
+
+- name: "Zabbix Agent | Instalar zabbix-agent"
+  ansible.builtin.package:
+    name: "zabbix-agent"
+    state: "present"
+    update_cache: true
+  become: true
+  when: zabbix_agent_enabled
+  tags: ["zabbix_agent", "packages"]
+
+- name: "Zabbix Agent | Criar diretório de inclusão de configuração"
+  ansible.builtin.file:
+    path: "{{ zabbix_agent_include_dir }}"
+    state: "directory"
+    owner: "zabbix"
+    group: "zabbix"
+    mode: "0755"
+  become: true
+  when: zabbix_agent_enabled
+  tags: ["zabbix_agent", "configuration"]
+
+- name: "Zabbix Agent | Configurar zabbix_agentd.conf"
+  ansible.builtin.template:
+    src: "zabbix_agentd.conf.j2"
+    dest: "/etc/zabbix/zabbix_agentd.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  when: zabbix_agent_enabled
+  notify: "Reiniciar zabbix-agent"
+  tags: ["zabbix_agent", "configuration"]
+
+- name: "Zabbix Agent | Habilitar e iniciar serviço zabbix-agent"
+  ansible.builtin.systemd:
+    name: "zabbix-agent"
+    state: "started"
+    enabled: true
+    daemon_reload: true
+  become: true
+  when: zabbix_agent_enabled
+  tags: ["zabbix_agent", "service"]
+
+- name: "Zabbix Agent | Abrir porta do Zabbix Agent no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ zabbix_agent_listen_port }}"
+    proto: "tcp"
+    comment: "Allow Zabbix Agent traffic"
+  become: true
+  when: zabbix_agent_enabled
+  tags: ["zabbix_agent", "firewall"]

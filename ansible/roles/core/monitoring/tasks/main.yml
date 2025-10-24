@@ -1,0 +1,84 @@
+---
+# tasks file for core/monitoring
+
+- name: "Monitoring | Criar grupo para node_exporter"
+  ansible.builtin.group:
+    name: "{{ monitoring_node_exporter_group }}"
+    system: true
+    state: "present"
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Criar usuário para node_exporter"
+  ansible.builtin.user:
+    name: "{{ monitoring_node_exporter_user }}"
+    group: "{{ monitoring_node_exporter_group }}"
+    system: true
+    shell: "/sbin/nologin"
+    create_home: false
+    state: "present"
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Baixar Node Exporter"
+  ansible.builtin.unarchive:
+    src: "https://github.com/prometheus/node_exporter/releases/download/v{{ monitoring_node_exporter_version }}/node_exporter-{{ monitoring_node_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp"
+    remote_src: true
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Copiar binário do Node Exporter"
+  ansible.builtin.copy:
+    src: "/tmp/node_exporter-{{ monitoring_node_exporter_version }}.linux-amd64/node_exporter"
+    dest: "{{ monitoring_node_exporter_install_dir }}/node_exporter"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+    remote_src: true
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Remover arquivos temporários do Node Exporter"
+  ansible.builtin.file:
+    path: "/tmp/node_exporter-{{ monitoring_node_exporter_version }}.linux-amd64"
+    state: "absent"
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Configurar serviço systemd para Node Exporter"
+  ansible.builtin.template:
+    src: "node_exporter.service.j2"
+    dest: "/etc/systemd/system/node_exporter.service"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  when: monitoring_node_exporter_enabled
+  notify: "Reiniciar node_exporter"
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Habilitar e iniciar serviço node_exporter"
+  ansible.builtin.systemd:
+    name: "node_exporter"
+    state: "started"
+    enabled: true
+    daemon_reload: true
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "node_exporter"]
+
+- name: "Monitoring | Abrir porta do Node Exporter no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "{{ monitoring_node_exporter_port }}"
+    proto: "tcp"
+    comment: "Allow Node Exporter metrics"
+  become: true
+  when: monitoring_node_exporter_enabled
+  tags: ["monitoring", "firewall"]

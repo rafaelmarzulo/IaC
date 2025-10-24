@@ -1,0 +1,7 @@
+---
+# defaults file for core/logging
+
+# Endereço do servidor de log remoto. Deixe em branco para desabilitar.
+logging_remote_host: "logs.example.com"  # Ex: logs.your-domain.com ou um IP
+logging_remote_port: "514"
+logging_remote_protocol: "tcp"  # 'tcp' é mais confiável que 'udp'

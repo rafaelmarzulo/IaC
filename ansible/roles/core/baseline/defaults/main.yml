@@ -1,0 +1,20 @@
+---
+# defaults file for core/baseline
+
+# Fuso horário padrão para os servidores
+baseline_timezone: "America/Sao_Paulo"
+
+# Lista de pacotes essenciais a serem instalados
+# Estes são pacotes comuns úteis em quase todos os servidores Linux.
+baseline_packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - git
+  - htop
+  - ncdu
+  - rsync
+  - software-properties-common
+  - unzip
+  - vim
+  - wget

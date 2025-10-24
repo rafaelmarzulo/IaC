@@ -1,0 +1,56 @@
+---
+# tasks file for core/certificates
+
+- name: "Certificates | Garantir que Certbot esteja instalado"
+  ansible.builtin.package:
+    name: "certbot"
+    state: "present"
+  become: true
+  tags: ["certificates", "certbot"]
+
+- name: "Certificates | Abrir porta 80 (HTTP) no firewall para desafio HTTP-01"
+  community.general.ufw:
+    rule: "allow"
+    port: "80"
+    proto: "tcp"
+    comment: "Allow HTTP for Certbot HTTP-01 challenge"
+  become: true
+  when: certificates_auth_method == "webroot"
+  tags: ["certificates", "firewall"]
+
+- name: "Certificates | Abrir porta 443 (HTTPS) no firewall"
+  community.general.ufw:
+    rule: "allow"
+    port: "443"
+    proto: "tcp"
+    comment: "Allow HTTPS traffic"
+  become: true
+  tags: ["certificates", "firewall"]
+
+- name: "Certificates | Obter certificados Let's Encrypt"
+  community.general.acme_certificate:
+    acme_directory: "https://acme-v02.api.letsencrypt.org/directory" # Produção
+    acme_version: "2"
+    account_email: "{{ certificates_certbot_email }}"
+    terms_agreed: true
+    challenge: "http-01"
+    acme_directory_url: "https://acme-staging-v02.api.letsencrypt.org/directory" # Staging para testes
+    state: "present"
+    force_renewal: "{{ certificates_force_renewal }}"
+    domains: "{{ item.domain }}"
+    webroot_path: "{{ item.webroot | default(certificates_webroot_path) }}"
+  become: true
+  loop: "{{ certificates_domains }}"
+  when: certificates_domains is defined and certificates_domains | length > 0
+  tags: ["certificates", "certbot"]
+
+- name: "Certificates | Configurar renovação automática do Certbot"
+  ansible.builtin.cron:
+    name: "Certbot automatic renewal"
+    minute: "30"
+    hour: "3"
+    day: "*/15" # A cada 15 dias
+    job: "certbot renew --quiet --post-hook 'systemctl reload nginx'"
+    user: "root"
+  become: true
+  tags: ["certificates", "cron"]

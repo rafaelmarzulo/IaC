@@ -1,0 +1,6 @@
+---
+# defaults file for security/secrets_management
+
+# Caminho para o arquivo de senha do Ansible Vault (se gerenciado pelo Ansible)
+# Geralmente, este arquivo é mantido fora do controle de versão ou injetado via CI/CD.
+# secrets_vault_password_file: "/etc/ansible/vault_password.txt"

@@ -1,0 +1,54 @@
+---
+# defaults file for platform/messaging
+
+messaging_rabbitmq_enabled: true
+
+# --- Erlang Installation (RabbitMQ dependency) ---
+messaging_erlang_version: "25.x" # Ex: "25.x", "26.x"
+messaging_erlang_repo_url: "https://packages.erlang-solutions.com/debian"
+messaging_erlang_repo_key_url: "https://packages.erlang-solutions.com/debian/erlang_solutions.asc"
+
+# --- RabbitMQ Installation ---
+messaging_rabbitmq_version: "3.11.x" # Ex: "3.11.x", "3.12.x"
+messaging_rabbitmq_repo_url: "https://packagecloud.io/rabbitmq/rabbitmq-server/debian"
+messaging_rabbitmq_repo_key_url: "https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey"
+
+# --- RabbitMQ Configuration ---
+messaging_rabbitmq_listen_port: 5672
+messaging_rabbitmq_management_port: 15672
+
+# Plugins a serem habilitados (ex: rabbitmq_management, rabbitmq_web_stomp)
+messaging_rabbitmq_enabled_plugins:
+  - rabbitmq_management
+  - rabbitmq_web_mqtt
+  - rabbitmq_stomp
+
+# --- Vhosts a serem criados ---
+# Ex: { name: "/my_vhost" }
+messaging_rabbitmq_vhosts_to_create:
+  - name: "/"
+  - name: "/my_app_vhost"
+
+# --- Usuários a serem criados ---
+# Senhas devem ser gerenciadas via Ansible Vault!
+# Ex: { name: "app_user", password: "{{ vault_app_password }}", tags: "management" }
+messaging_rabbitmq_users_to_create:
+  - name: "guest"
+    password: "guest"
+    tags: "administrator"
+  - name: "my_app_user"
+    password: "{{ vault_rabbitmq_app_password }}"
+    tags: ""
+
+# --- Permissões de Usuários em Vhosts ---
+# Ex: { user: "app_user", vhost: "/my_app_vhost", configure_priv: ".*", read_priv: ".*", write_priv: ".*" }
+messaging_rabbitmq_user_permissions:
+  - user: "my_app_user"
+    vhost: "/my_app_vhost"
+    configure_priv: ".*"
+    read_priv: ".*"
+    write_priv: ".*"
+
+# --- Firewall Ports (se não estiver usando core/network) ---
+# messaging_rabbitmq_open_amqp_port: true
+# messaging_rabbitmq_open_management_port: true

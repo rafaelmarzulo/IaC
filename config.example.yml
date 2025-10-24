@@ -1,0 +1,241 @@
+# =============================================================================
+# Generic Proxmox Infrastructure Configuration
+# =============================================================================
+
+project:
+  name: "myproject"
+  description: "Generic Proxmox infrastructure managed by Terraform"
+  owner: "infrastructure-team"
+  repository: "https://github.com/username/repo"
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+
+networks:
+  development:
+    name: "dev-network"
+    subnet: "10.21.250.0/24"
+    gateway: "10.21.250.1"
+    dns: ["1.1.1.1", "8.8.8.8"]
+    bridge: "vmbr0"
+    ip_range:
+      start: "10.21.250.100"
+      end: "10.21.250.199"
+    internet_access: true
+
+  staging:
+    name: "staging-network"
+    subnet: "10.21.250.0/24"
+    gateway: "10.21.250.1"
+    dns: ["1.1.1.1", "8.8.8.8"]
+    bridge: "vmbr0"
+    ip_range:
+      start: "10.21.250.200"
+      end: "10.21.250.249"
+    internet_access: true
+
+  production:
+    name: "prod-network"
+    subnet: "10.11.95.0/24"
+    gateway: "10.11.95.1"
+    dns: ["1.1.1.1", "8.8.8.8"]
+    bridge: "vmbr1"
+    ip_range:
+      start: "10.11.95.100"
+      end: "10.11.95.199"
+    internet_access: false
+
+# =============================================================================
+# Proxmox Cluster Configuration
+# =============================================================================
+
+proxmox:
+  cluster_name: "proxmox-cluster"
+  api:
+    url: "https://proxmox.local:8006/api2/json"
+    tls_insecure: true
+    timeout: 300
+
+  nodes:
+    primary:
+      name: "proxmox-node1"
+      ip: "10.11.95.10"
+      role: "primary"
+      api_endpoint: true
+
+    secondary:
+      name: "proxmox-node2"
+      ip: "10.11.95.11"
+      role: "secondary"
+      api_endpoint: false
+
+  storage:
+    default: "local-lvm"
+    backup: "local"
+    templates: "local"
+
+# =============================================================================
+# VMID Allocation
+# =============================================================================
+
+vmids:
+  development:
+    range: "1000-1999"
+    description: "Development and testing VMs"
+
+  staging:
+    range: "2000-2999"
+    description: "Staging and pre-production VMs"
+
+  production:
+    range: "3000-3999"
+    description: "Production VMs"
+
+  infrastructure:
+    range: "9000-9999"
+    description: "Infrastructure services (monitoring, backup, etc.)"
+
+# =============================================================================
+# VM Templates
+# =============================================================================
+
+templates:
+  ubuntu22:
+    name: "ubuntu-22.04-template"
+    id: "1010"
+    description: "Ubuntu 22.04 LTS Server Template"
+    os: "ubuntu"
+    version: "22.04"
+
+  ubuntu20:
+    name: "ubuntu-20.04-template"
+    id: "1020"
+    description: "Ubuntu 20.04 LTS Server Template"
+    os: "ubuntu"
+    version: "20.04"
+
+# =============================================================================
+# Default VM Configurations
+# =============================================================================
+
+vm_defaults:
+  development:
+    cores: 2
+    memory: 2048
+    disk_size: "20G"
+    storage: "local-lvm"
+
+  staging:
+    cores: 2
+    memory: 4096
+    disk_size: "40G"
+    storage: "local-lvm"
+
+  production:
+    cores: 4
+    memory: 8192
+    disk_size: "80G"
+    storage: "local-lvm"
+
+# =============================================================================
+# Cloud-Init Configuration
+# =============================================================================
+
+cloud_init:
+  default_user: "ubuntu"
+  ssh_keys:
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... admin@example.com"
+    - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQ... backup@example.com"
+
+  packages:
+    - "curl"
+    - "wget"
+    - "git"
+    - "htop"
+    - "vim"
+    - "unzip"
+
+  timezone: "UTC"
+  locale: "en_US.UTF-8"
+
+# =============================================================================
+# CI/CD Configuration
+# =============================================================================
+
+cicd:
+  runner:
+    network: "development"
+    ip: "10.21.250.50"
+    vm_id: "1050"
+    specs:
+      cores: 2
+      memory: 4096
+      disk_size: "50G"
+
+  environments:
+    development:
+      auto_deploy: true
+      approval_required: false
+      reviewers: 0
+
+    staging:
+      auto_deploy: false
+      approval_required: true
+      reviewers: 1
+
+    production:
+      auto_deploy: false
+      approval_required: true
+      reviewers: 2
+      wait_timer: 300  # 5 minutes
+
+# =============================================================================
+# Security Configuration
+# =============================================================================
+
+security:
+  firewall:
+    enabled: true
+    default_policy: "deny"
+
+  ssh:
+    password_auth: false
+    key_only: true
+    port: 22
+
+  monitoring:
+    enabled: true
+    agent: "prometheus-node-exporter"
+
+  backup:
+    enabled: true
+    schedule: "daily"
+    retention: 30
+
+# =============================================================================
+# Integrations
+# =============================================================================
+
+integrations:
+  ansible:
+    enabled: true
+    inventory_format: "yaml"
+
+  monitoring:
+    prometheus:
+      enabled: false
+      endpoint: ""
+
+    grafana:
+      enabled: false
+      endpoint: ""
+
+  notifications:
+    slack:
+      enabled: false
+      webhook: ""
+
+    email:
+      enabled: false
+      smtp_server: ""

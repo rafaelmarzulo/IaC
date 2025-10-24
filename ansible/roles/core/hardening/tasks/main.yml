@@ -1,0 +1,57 @@
+---
+# tasks file for core/hardening
+
+- name: "Hardening | Desabilitar login de root via SSH"
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: "^#?PermitRootLogin"
+    line: "PermitRootLogin {{ hardening_ssh_permit_root_login }}"
+    state: "present"
+    validate: "sshd -t %s"
+  become: true
+  notify: "Reiniciar serviço sshd"
+  tags: ["hardening", "ssh"]
+
+- name: "Hardening | Desabilitar autenticação por senha via SSH"
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: "^#?PasswordAuthentication"
+    line: "PasswordAuthentication {{ hardening_ssh_password_authentication }}"
+    state: "present"
+    validate: "sshd -t %s"
+  become: true
+  notify: "Reiniciar serviço sshd"
+  tags: ["hardening", "ssh"]
+
+- name: "Hardening | Desabilitar autenticação por desafio-resposta"
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: "^#?ChallengeResponseAuthentication"
+    line: "ChallengeResponseAuthentication {{ hardening_ssh_challenge_response_auth }}"
+    state: "present"
+    validate: "sshd -t %s"
+  become: true
+  notify: "Reiniciar serviço sshd"
+  tags: ["hardening", "ssh"]
+
+- name: "Hardening | Configurar UsePAM"
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: "^#?UsePAM"
+    line: "UsePAM {{ hardening_ssh_use_pam }}"
+    state: "present"
+    validate: "sshd -t %s"
+  become: true
+  notify: "Reiniciar serviço sshd"
+  tags: ["hardening", "ssh"]
+
+- name: "Hardening | Desabilitar X11 Forwarding"
+  ansible.builtin.lineinfile:
+    path: "/etc/ssh/sshd_config"
+    regexp: "^#?X11Forwarding"
+    line: "X11Forwarding {{ hardening_ssh_x11_forwarding }}"
+    state: "present"
+    validate: "sshd -t %s"
+  become: true
+  notify: "Reiniciar serviço sshd"
+  tags: ["hardening", "ssh"]

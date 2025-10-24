@@ -1,0 +1,39 @@
+---
+# defaults file for platform/databases
+
+databases_postgresql_enabled: true
+
+# --- PostgreSQL Installation ---
+databases_postgresql_version: "14" # Ex: "14", "15"
+databases_postgresql_package_name: "postgresql-{{ databases_postgresql_version }}"
+databases_postgresql_contrib_package_name: "postgresql-contrib-{{ databases_postgresql_version }}"
+
+# --- PostgreSQL Configuration (postgresql.conf) ---
+databases_postgresql_listen_addresses: "*" # Onde o PostgreSQL irá escutar (ex: 'localhost', '*', '192.168.1.10')
+databases_postgresql_port: 5432
+databases_postgresql_max_connections: 100
+databases_postgresql_shared_buffers: "128MB"
+
+# --- PostgreSQL Client Authentication (pg_hba.conf) ---
+# Lista de entradas para pg_hba.conf
+# Ex: { type: "host", database: "all", user: "all", address: "127.0.0.1/32", method: "scram-sha-256" }
+databases_postgresql_pg_hba_entries:
+  - { type: "local", database: "all", user: "all", method: "peer" }
+  - { type: "host", database: "all", user: "all", address: "127.0.0.1/32", method: "scram-sha-256" }
+  - { type: "host", database: "all", user: "all", address: "::1/128", method: "scram-sha-256" }
+  # Permitir acesso de rede para o usuário da aplicação
+  # - { type: "host", database: "app_db", user: "app_user", address: "192.168.1.0/24", method: "scram-sha-256" }
+
+# --- Bancos de Dados a serem criados ---
+# Ex: { name: "app_db", owner: "app_user", encoding: "UTF8", lc_collate: "en_US.UTF-8", lc_ctype: "en_US.UTF-8" }
+databases_postgresql_databases_to_create: []
+  # - { name: "my_app_db", owner: "my_app_user" }
+
+# --- Usuários a serem criados ---
+# Ex: { name: "app_user", password: "{{ vault_app_password }}", priv: "CREATEDB" }
+# Senhas devem ser gerenciadas via Ansible Vault!
+databases_postgresql_users_to_create: []
+  # - { name: "my_app_user", password: "{{ vault_my_app_password }}" }
+
+# --- Firewall Ports (se não estiver usando core/network) ---
+# databases_postgresql_open_port: true

@@ -1,0 +1,12 @@
+collections:
+  # Coleções essenciais da comunidade
+  - name: community.general
+    version: "9.2.0"
+  - name: community.docker
+    version: "3.4.11"
+  - name: community.crypto
+    version: "2.17.0"
+
+  # Coleção para Proxmox (relevante para o projeto)
+  - name: community.proxmox
+    version: "1.2.0"

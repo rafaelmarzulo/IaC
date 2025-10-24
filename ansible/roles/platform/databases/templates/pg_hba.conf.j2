@@ -1,0 +1,16 @@
+# This file is managed by Ansible. Do not edit manually.
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     peer
+
+# IPv4 local connections:
+host    all             all             127.0.0.1/32            scram-sha-256
+
+# IPv6 local connections:
+host    all             all             ::1/128                 scram-sha-256
+
+{% for entry in databases_postgresql_pg_hba_entries %}
+{{ entry.type | default("host") }}    {{ entry.database | default("all") }}             {{ entry.user | default("all") }}             {% if entry.address is defined %}{{ entry.address }}{% else %}all{% endif %}                 {{ entry.method | default("scram-sha-256") }}
+{% endfor %}

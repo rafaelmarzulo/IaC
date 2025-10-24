@@ -1,0 +1,21 @@
+---
+# defaults file for core/users
+
+# Lista de usuários a serem criados/gerenciados no sistema
+users_to_create:
+  - username: "ubuntu"  # Seu usuário de exemplo
+    groups: "sudo"
+    state: "present"
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM... ubuntu@"
+
+  - username: "auditor"
+    groups: ""
+    state: "present"
+    ssh_keys:
+      - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE... auditor@security-team"
+
+# Lista de usuários a serem removidos do sistema
+users_to_remove:
+  - username: "tempuser"
+    state: "absent"

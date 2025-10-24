@@ -1,0 +1,12 @@
+---
+# defaults file for core/monitoring
+
+# --- Node Exporter Configuration ---
+monitoring_node_exporter_enabled: true
+monitoring_node_exporter_version: "1.7.0"
+monitoring_node_exporter_install_dir: "/usr/local/bin"
+monitoring_node_exporter_port: 9100
+
+# Usuário e grupo sob os quais o Node Exporter será executado
+monitoring_node_exporter_user: "node_exporter"
+monitoring_node_exporter_group: "node_exporter"

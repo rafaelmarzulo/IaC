@@ -1,0 +1,9 @@
+---
+# handlers file for platform/webservers
+
+- name: "Reiniciar nginx"
+  ansible.builtin.service:
+    name: "nginx"
+    state: "restarted"
+    enabled: true
+  become: true

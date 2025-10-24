@@ -1,0 +1,29 @@
+---
+# defaults file for core/network
+
+# --- Firewall (UFW) Configuration ---
+network_firewall_enabled: true
+network_firewall_default_incoming_policy: "deny" # 'deny', 'allow', 'reject'
+network_firewall_default_outgoing_policy: "allow" # 'deny', 'allow', 'reject'
+
+# Lista de regras de firewall para permitir acesso
+# Exemplos:
+# - { port: 22, proto: tcp, comment: "Allow SSH" }
+# - { port: 80, proto: tcp, comment: "Allow HTTP" }
+# - { port: 443, proto: tcp, comment: "Allow HTTPS" }
+# - { port: 53, proto: udp, comment: "Allow DNS" }
+# - { app: "Nginx Full", comment: "Allow Nginx Full profile" } # Para perfis de aplicação UFW
+network_firewall_allowed_rules:
+  - { port: "{{ hardening_ssh_port | default(22) }}", proto: tcp, comment: "Allow SSH (from hardening role)" }
+  - { port: 80, proto: tcp, comment: "Allow HTTP" }
+  - { port: 443, proto: tcp, comment: "Allow HTTPS" }
+
+# --- DNS Configuration ---
+network_dns_servers:
+  - "1.1.1.1" # Cloudflare DNS
+  - "8.8.8.8" # Google DNS
+
+# Domínios de busca para resolução de nomes
+network_dns_search_domains:
+  - "local"
+  - "example.com"

@@ -1,0 +1,30 @@
+---
+# tasks file for core/logging
+
+- name: "Logging | Garantir que rsyslog esteja instalado"
+  ansible.builtin.package:
+    name: "rsyslog"
+    state: "present"
+  become: true
+  tags: ["logging", "packages"]
+
+- name: "Logging | Configurar encaminhamento de logs para servidor remoto"
+  ansible.builtin.template:
+    src: "01-remote.conf.j2"
+    dest: "/etc/rsyslog.d/01-remote.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  notify: "Reiniciar serviço rsyslog"
+  when: logging_remote_host is defined and logging_remote_host != ""
+  tags: ["logging", "configuration"]
+
+- name: "Logging | Remover configuração de encaminhamento se desabilitado"
+  ansible.builtin.file:
+    path: "/etc/rsyslog.d/01-remote.conf"
+    state: "absent"
+  become: true
+  notify: "Reiniciar serviço rsyslog"
+  when: logging_remote_host is not defined or logging_remote_host == ""
+  tags: ["logging", "configuration"]

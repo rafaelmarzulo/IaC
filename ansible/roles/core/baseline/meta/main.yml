@@ -1,0 +1,17 @@
+galaxy_info:
+  author: "Rafael Marzulo"
+  description: "Role para configurar o baseline de segurança e pacotes em servidores."
+  company: "N/A"
+  license: "MIT"
+
+  min_ansible_version: "2.12"
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+
+dependencies: []

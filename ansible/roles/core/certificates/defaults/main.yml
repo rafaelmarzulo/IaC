@@ -1,0 +1,27 @@
+---
+# defaults file for core/certificates
+
+# E-mail para notificações do Certbot (obrigatório para Let's Encrypt)
+certificates_certbot_email: "your-email@example.com"
+
+# Lista de domínios para os quais obter certificados
+# Exemplo:
+# certificates_domains:
+#   - domain: "example.com"
+#     webroot: "/var/www/html"
+#   - domain: "www.example.com"
+#     webroot: "/var/www/html"
+certificates_domains: []
+
+# Método de autenticação do Certbot (webroot, nginx, apache, standalone)
+# 'webroot' é o mais comum e flexível para a maioria dos setups.
+certificates_auth_method: "webroot"
+
+# Caminho para o webroot se 'webroot' for o método de autenticação
+certificates_webroot_path: "/var/www/html"
+
+# Forçar renovação (apenas para testes, não usar em produção regularmente)
+certificates_force_renewal: false
+
+# Modo de teste (staging) para evitar limites de taxa do Let's Encrypt durante o desenvolvimento
+certificates_test_mode: false

@@ -1,0 +1,44 @@
+---
+# defaults file for security/cis_compliance
+
+cis_enabled: true
+
+# --- 1.1 Filesystem Configuration ---
+cis_ensure_sticky_bit_on_world_writable: true
+cis_restrict_boot_loader_permissions: true
+
+# --- 1.5 Filesystem Integrity ---
+cis_install_aide: true
+
+# --- 2.1 Services ---
+cis_disable_unnecessary_services:
+  - avahi-daemon
+  - cups
+  - nfs-kernel-server
+  - rpcbind
+  - telnetd
+  - tftpd
+  - vsftpd
+
+# --- 3.4 Network Configuration ---
+cis_disable_ipv6: false # Cuidado ao desabilitar IPv6 se for usado
+cis_disable_dccp: true
+cis_disable_sctp: true
+cis_disable_rds: true
+cis_disable_tipc: true
+cis_enable_syn_cookies: true
+
+# --- 5.3 User Accounts and Authentication ---
+cis_password_policy_min_length: 14
+cis_password_policy_min_lower: 1
+cis_password_policy_min_upper: 1
+cis_password_policy_min_digit: 1
+cis_password_policy_min_special: 1
+cis_password_policy_max_days: 90
+cis_password_policy_warn_days: 7
+cis_password_policy_inactive_days: 30
+cis_password_policy_lockout_attempts: 5
+cis_password_policy_lockout_time: 900 # 15 minutos
+
+# --- 5.4 Logging and Auditing ---
+cis_install_auditd: true

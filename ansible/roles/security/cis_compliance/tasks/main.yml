@@ -1,0 +1,27 @@
+---
+# tasks file for security/cis_compliance
+
+- name: "CIS | Seção 1 - Configuração do Sistema de Arquivos"
+  ansible.builtin.include_tasks: "section_1_filesystem.yml"
+  when: cis_enabled
+  tags: ["cis", "cis_section1"]
+
+- name: "CIS | Seção 2 - Serviços"
+  ansible.builtin.include_tasks: "section_2_services.yml"
+  when: cis_enabled
+  tags: ["cis", "cis_section2"]
+
+- name: "CIS | Seção 3 - Configuração de Rede"
+  ansible.builtin.include_tasks: "section_3_network.yml"
+  when: cis_enabled
+  tags: ["cis", "cis_section3"]
+
+- name: "CIS | Seção 4 - Contas de Usuário e Autenticação"
+  ansible.builtin.include_tasks: "section_4_users_auth.yml"
+  when: cis_enabled
+  tags: ["cis", "cis_section4"]
+
+- name: "CIS | Seção 5 - Logging e Auditoria"
+  ansible.builtin.include_tasks: "section_5_logging_auditing.yml"
+  when: cis_enabled
+  tags: ["cis", "cis_section5"]

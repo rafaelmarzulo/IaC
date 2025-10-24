@@ -1,0 +1,26 @@
+---
+# defaults file for platform/storage
+
+storage_nfs_enabled: true
+
+# --- NFS Server Configuration ---
+storage_nfs_is_server: false
+
+# Lista de diretórios a serem exportados pelo servidor NFS
+# Ex: { path: "/mnt/shared", clients: "192.168.1.0/24(rw,sync,no_subtree_check)" }
+storage_nfs_exports:
+  - path: "/mnt/nfs_share"
+    clients: "192.168.1.0/24(rw,sync,no_subtree_check)"
+
+# --- NFS Client Configuration ---
+storage_nfs_is_client: false
+
+# Lista de compartilhamentos NFS a serem montados
+# Ex: { src: "nfs_server.example.com:/mnt/shared", dest: "/mnt/nfs_client", opts: "defaults,hard,intr" }
+storage_nfs_mounts:
+  - src: "nfs_server.example.com:/mnt/nfs_share"
+    dest: "/mnt/nfs_client_mount"
+    opts: "defaults,hard,intr"
+
+# --- Firewall Ports (se não estiver usando core/network) ---
+# storage_nfs_open_server_ports: true

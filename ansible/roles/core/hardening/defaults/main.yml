@@ -1,0 +1,10 @@
+---
+# defaults file for core/hardening
+
+# Configurações de segurança para o serviço SSH
+hardening_ssh_port: 22
+hardening_ssh_permit_root_login: "no"
+hardening_ssh_password_authentication: "no"
+hardening_ssh_use_pam: "yes"
+hardening_ssh_challenge_response_auth: "no"
+hardening_ssh_x11_forwarding: "no"

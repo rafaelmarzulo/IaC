@@ -1,0 +1,89 @@
+---
+# tasks file for platform/webservers
+
+- name: "Webservers | Garantir que Nginx esteja instalado"
+  ansible.builtin.package:
+    name: "{{ webservers_nginx_package_name }}"
+    state: "present"
+    update_cache: true
+  become: true
+  when: webservers_nginx_enabled
+  tags: ["webservers", "nginx", "packages"]
+
+- name: "Webservers | Remover site padrão do Nginx"
+  ansible.builtin.file:
+    path: "/etc/nginx/sites-enabled/default"
+    state: "absent"
+  become: true
+  when: webservers_nginx_enabled
+  notify: "Reiniciar nginx"
+  tags: ["webservers", "nginx", "configuration"]
+
+- name: "Webservers | Implantar configuração principal do Nginx"
+  ansible.builtin.template:
+    src: "nginx.conf.j2"
+    dest: "{{ webservers_nginx_conf_path }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  when: webservers_nginx_enabled
+  notify: "Reiniciar nginx"
+  tags: ["webservers", "nginx", "configuration"]
+
+- name: "Webservers | Criar diretório para server blocks personalizados"
+  ansible.builtin.file:
+    path: "/etc/nginx/sites-available"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  become: true
+  when: webservers_nginx_enabled
+  tags: ["webservers", "nginx", "configuration"]
+
+- name: "Webservers | Implantar server blocks personalizados"
+  ansible.builtin.template:
+    src: "{{ item.template }}"
+    dest: "/etc/nginx/sites-available/{{ item.filename }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  loop: "{{ webservers_nginx_server_blocks | selectattr('template', 'defined') | list }}"
+  when: webservers_nginx_enabled and webservers_nginx_server_blocks | length > 0
+  notify: "Reiniciar nginx"
+  tags: ["webservers", "nginx", "configuration"]
+
+- name: "Webservers | Implantar server blocks personalizados (conteúdo direto)"
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "/etc/nginx/sites-available/{{ item.filename }}"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  loop: "{{ webservers_nginx_server_blocks | selectattr('content', 'defined') | list }}"
+  when: webservers_nginx_enabled and webservers_nginx_server_blocks | length > 0
+  notify: "Reiniciar nginx"
+  tags: ["webservers", "nginx", "configuration"]
+
+- name: "Webservers | Habilitar server blocks personalizados"
+  ansible.builtin.file:
+    src: "/etc/nginx/sites-available/{{ item.filename }}"
+    dest: "/etc/nginx/sites-enabled/{{ item.filename }}"
+    state: "link"
+  become: true
+  loop: "{{ webservers_nginx_server_blocks }}"
+  when: webservers_nginx_enabled and webservers_nginx_server_blocks | length > 0
+  notify: "Reiniciar nginx"
+  tags: ["webservers", "nginx", "configuration"]
+
+- name: "Webservers | Garantir que o serviço Nginx esteja rodando e habilitado"
+  ansible.builtin.service:
+    name: "nginx"
+    state: "started"
+    enabled: true
+  become: true
+  when: webservers_nginx_enabled
+  tags: ["webservers", "nginx", "service"]

@@ -1,0 +1,8 @@
+---
+# handlers file for core/hardening
+
+- name: "Reiniciar serviço sshd"
+  ansible.builtin.service:
+    name: "sshd"
+    state: "restarted"
+  become: true

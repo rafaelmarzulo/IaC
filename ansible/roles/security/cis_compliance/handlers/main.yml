@@ -1,0 +1,14 @@
+---
+# handlers file for security/cis_compliance
+
+- name: "Reiniciar auditd"
+  ansible.builtin.service:
+    name: "auditd"
+    state: "restarted"
+  become: true
+  listen: "restart auditd"
+
+- name: "Recarregar sysctl"
+  ansible.builtin.command: "sysctl --system"
+  become: true
+  listen: "reload sysctl"

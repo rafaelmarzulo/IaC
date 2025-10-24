@@ -1,0 +1,22 @@
+---
+# tasks for CIS Section 5: Logging and Auditing
+
+- name: "5.1.1 | Instalar auditd"
+  ansible.builtin.package:
+    name: "auditd"
+    state: "present"
+  become: true
+  when: cis_install_auditd
+  tags: ["cis", "cis_5.1.1"]
+
+- name: "5.1.2 | Configurar auditd para registrar eventos críticos"
+  ansible.builtin.template:
+    src: "audit.rules.j2"
+    dest: "/etc/audit/rules.d/audit.rules"
+    owner: "root"
+    group: "root"
+    mode: "0600"
+  become: true
+  when: cis_install_auditd
+  notify: "Reiniciar auditd"
+  tags: ["cis", "cis_5.1.2"]

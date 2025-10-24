@@ -1,0 +1,14 @@
+---
+# handlers file for core/network
+
+- name: "Recarregar UFW"
+  ansible.builtin.command: "ufw reload"
+  become: true
+  listen: "reload ufw"
+
+- name: "Reiniciar UFW"
+  ansible.builtin.service:
+    name: "ufw"
+    state: "restarted"
+  become: true
+  listen: "restart ufw"

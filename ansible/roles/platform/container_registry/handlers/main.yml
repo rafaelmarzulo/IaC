@@ -1,0 +1,8 @@
+---
+# handlers file for platform/container_registry
+
+- name: "Reiniciar Harbor"
+  ansible.builtin.command: "docker-compose down -v && docker-compose up -d"
+  args:
+    chdir: "{{ container_registry_harbor_install_dir }}/harbor"
+  become: true

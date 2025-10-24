@@ -1,0 +1,105 @@
+---
+# tasks file for platform/ci_cd
+
+- name: "CI/CD | Garantir que pacotes de pré-requisito estejam instalados"
+  ansible.builtin.apt:
+    name:
+      - curl
+      - git
+      - jq
+      - libicu-dev # Para algumas versões do runner
+    state: "present"
+    update_cache: true
+  become: true
+  when: ci_cd_runner_enabled and ansible_os_family == "Debian"
+  tags: ["ci_cd", "packages"]
+
+- name: "CI/CD | Criar grupo para actions-runner"
+  ansible.builtin.group:
+    name: "{{ ci_cd_runner_group }}"
+    system: true
+    state: "present"
+  become: true
+  when: ci_cd_runner_enabled
+  tags: ["ci_cd", "users"]
+
+- name: "CI/CD | Criar usuário para actions-runner"
+  ansible.builtin.user:
+    name: "{{ ci_cd_runner_user }}"
+    group: "{{ ci_cd_runner_group }}"
+    system: true
+    shell: "/bin/bash"
+    create_home: true
+    home: "{{ ci_cd_runner_install_dir }}"
+    state: "present"
+  become: true
+  when: ci_cd_runner_enabled
+  tags: ["ci_cd", "users"]
+
+- name: "CI/CD | Criar diretório de instalação do runner"
+  ansible.builtin.file:
+    path: "{{ ci_cd_runner_install_dir }}"
+    state: "directory"
+    owner: "{{ ci_cd_runner_user }}"
+    group: "{{ ci_cd_runner_group }}"
+    mode: "0755"
+  become: true
+  when: ci_cd_runner_enabled
+  tags: ["ci_cd", "configuration"]
+
+- name: "CI/CD | Baixar e extrair GitHub Actions Runner"
+  ansible.builtin.unarchive:
+    src: "https://github.com/actions/runner/releases/download/v{{ ci_cd_runner_version }}/actions-runner-linux-x64-{{ ci_cd_runner_version }}.tar.gz"
+    dest: "{{ ci_cd_runner_install_dir }}"
+    remote_src: true
+    owner: "{{ ci_cd_runner_user }}"
+    group: "{{ ci_cd_runner_group }}"
+  become: true
+  when: ci_cd_runner_enabled and not ansible.builtin.stat(path='{{ ci_cd_runner_install_dir }}/bin/Runner.Listener').stat.exists
+  tags: ["ci_cd", "installation"]
+
+- name: "CI/CD | Configurar e registrar o runner"
+  ansible.builtin.command: >
+    ./config.sh
+    --url {{ ci_cd_runner_github_url }}
+    --token {{ ci_cd_runner_registration_token }}
+    {% if ci_cd_runner_name %}--name {{ ci_cd_runner_name }}{% endif %}
+    {% if ci_cd_runner_labels %}--labels {{ ci_cd_runner_labels | join(',') }}{% endif %}
+    --unattended
+    --replace
+  args:
+    chdir: "{{ ci_cd_runner_install_dir }}"
+  become: true
+  become_user: "{{ ci_cd_runner_user }}"
+  when: ci_cd_runner_enabled and ci_cd_runner_github_url and ci_cd_runner_registration_token
+  tags: ["ci_cd", "registration"]
+
+- name: "CI/CD | Instalar serviço systemd para o runner"
+  ansible.builtin.command: "./svc.sh install {{ ci_cd_runner_user }}"
+  args:
+    chdir: "{{ ci_cd_runner_install_dir }}"
+  become: true
+  when: ci_cd_runner_enabled and not ansible.builtin.stat(path='/etc/systemd/system/actions.runner.{{ ci_cd_runner_github_url | regex_replace('https://github.com/', '') | regex_replace('/', '.') }}.{{ ci_cd_runner_name | default(ansible_hostname) }}.service').stat.exists
+  tags: ["ci_cd", "service"]
+
+- name: "CI/CD | Configurar serviço systemd para o runner (template)"
+  ansible.builtin.template:
+    src: "actions.runner.service.j2"
+    dest: "/etc/systemd/system/actions.runner.{{ ci_cd_runner_github_url | regex_replace('https://github.com/', '') | regex_replace('/', '.') }}.{{ ci_cd_runner_name | default(ansible_hostname) }}.service"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+  when: ci_cd_runner_enabled
+  notify: "Reiniciar actions-runner"
+  tags: ["ci_cd", "service"]
+
+- name: "CI/CD | Habilitar e iniciar serviço do runner"
+  ansible.builtin.systemd:
+    name: "actions.runner.{{ ci_cd_runner_github_url | regex_replace('https://github.com/', '') | regex_replace('/', '.') }}.{{ ci_cd_runner_name | default(ansible_hostname) }}"
+    state: "started"
+    enabled: true
+    daemon_reload: true
+  become: true
+  when: ci_cd_runner_enabled
+  tags: ["ci_cd", "service"]
