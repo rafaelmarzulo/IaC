@@ -1,0 +1,1 @@
+# Normaliza definição de discos
