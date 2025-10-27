@@ -17,16 +17,16 @@ vm_name_prefix  = "staging-vm"
 vmid_start      = 2100
 
 vm_defaults = {
-  cores     = 2
+  cores     = 4
   memory    = 4096
   disk_size = "40G"
   storage   = "local-lvm"
 }
 
-# Network configuration (same network as dev for this example)
+# Network configuration - Staging Network
 network_bridge = "vmbr0"
 ip_base        = "10.21.250"
-ip_start       = 200
+ip_start       = 100  # Range: 10.21.250.100-254 (Staging)
 ip_cidr        = 24
 ip_gateway     = "10.21.250.1"
 nameserver     = "1.1.1.1 8.8.8.8"
@@ -40,10 +40,10 @@ ssh_keys    = <<-EOT
 EOT
 
 # Tags and metadata
-additional_tags = ["staging", "pre-production", "manual-deploy"]
-created_by     = "terraform-staging"
+additional_tags = ["staging", "pre-production", "auto-deploy", "staging-environment"]
+created_by      = "terraform-staging"
 
 # Feature flags
 enable_cloud_init = true
-enable_backup     = true
-enable_monitoring = true
+enable_backup     = true   # Backup enabled for staging environment
+enable_monitoring = true   # Monitoring enabled for staging environment
