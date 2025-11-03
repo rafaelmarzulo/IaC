@@ -1,0 +1,285 @@
+# 📋 Configuração da Infraestrutura Metodista
+# Este arquivo serve como exemplo e template para configurar toda a infraestrutura
+# Validado pelo schema config-schema.json
+
+metadata:
+  version: "1.0.0"
+  last_updated: "2025-11-03"
+  maintainer: "Rafael Marzulo <rafael@metodista.br>"
+  description: "Configuração da infraestrutura Proxmox Cluster F1"
+
+global:
+  proxmox:
+    api_url: "https://10.11.95.35:8006/api2/json"
+    user: "terraform@pve"
+    nodes:
+      - name: "McLaren"
+        host: "10.11.95.35"
+        description: "Nó principal do cluster"
+      - name: "Williams"
+        host: "10.11.95.36"
+        description: "Nó secundário do cluster"
+
+  networks:
+    development:
+      cidr: "10.21.250.0/24"
+      gateway: "10.21.250.1"
+      dns: ["1.1.1.1", "8.8.8.8"]
+      bridge: "vmbr0"
+      ip_range:
+        start: "10.21.250.2"
+        end: "10.21.250.99"
+
+    staging:
+      cidr: "10.21.250.0/24"
+      gateway: "10.21.250.1"
+      dns: ["1.1.1.1", "8.8.8.8"]
+      bridge: "vmbr0"
+      ip_range:
+        start: "10.21.250.100"
+        end: "10.21.250.254"
+
+    production:
+      cidr: "10.11.95.0/24"
+      gateway: "10.11.95.1"
+      dns: ["1.1.1.1", "8.8.8.8"]
+      bridge: "vmbr0"
+      ip_range:
+        start: "10.11.95.2"
+        end: "10.11.95.254"
+
+  templates:
+    ubuntu-2404:
+      name: "ubuntu-noble-server-cloudimg-amd64-template-new"
+      node: "McLaren"
+      vmid: 1010
+      description: "Ubuntu 24.04 LTS template"
+
+    ubuntu-2404-williams:
+      name: "ubuntu-noble-server-cloudimg-amd64-template-williams"
+      node: "Williams"
+      vmid: 5010
+      description: "Ubuntu 24.04 LTS template no Williams"
+
+  defaults:
+    vm:
+      cores: 2
+      memory_gb: 2
+      disk_gb: 20
+      template: "ubuntu-2404"
+    ssh:
+      user: "ubuntu"
+      keys:
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDEKe8K+..."
+
+environments:
+  development:
+    vmid_range:
+      start: 1000
+      end: 1999
+    resource_limits:
+      max_cores: 4
+      max_memory_gb: 4
+      max_disk_gb: 50
+    vms:
+      - name: "dev-web-01"
+        vmid: 1001
+        ip: "10.21.250.10"
+        template: "ubuntu-2404"
+        node: "McLaren"
+        cores: 2
+        memory_gb: 2
+        disk_gb: 20
+        tags: ["development", "web", "terraform"]
+        description: "Servidor web de desenvolvimento"
+        ansible_groups: ["webservers", "development"]
+
+      - name: "dev-db-01"
+        vmid: 1020
+        ip: "10.21.250.20"
+        template: "ubuntu-2404"
+        node: "Williams"
+        cores: 2
+        memory_gb: 4
+        disk_gb: 30
+        tags: ["development", "database", "terraform"]
+        description: "Banco de dados de desenvolvimento"
+        ansible_groups: ["databases", "development"]
+
+    ansible:
+      enabled_roles:
+        - "core/users"
+        - "core/hardening"
+        - "core/monitoring"
+        - "platform/docker"
+      variables:
+        environment: "development"
+        log_level: "debug"
+        backup_enabled: false
+
+  staging:
+    vmid_range:
+      start: 2000
+      end: 2999
+    resource_limits:
+      max_cores: 4
+      max_memory_gb: 8
+      max_disk_gb: 100
+    vms:
+      - name: "staging-web-01"
+        vmid: 2001
+        ip: "10.21.250.100"
+        template: "ubuntu-2404"
+        node: "McLaren"
+        cores: 2
+        memory_gb: 4
+        disk_gb: 30
+        tags: ["staging", "web", "terraform"]
+        description: "Servidor web de homologação"
+        ansible_groups: ["webservers", "staging"]
+
+      - name: "staging-db-01"
+        vmid: 2020
+        ip: "10.21.250.120"
+        template: "ubuntu-2404-williams"
+        node: "Williams"
+        cores: 4
+        memory_gb: 8
+        disk_gb: 50
+        tags: ["staging", "database", "terraform"]
+        description: "Banco de dados de homologação"
+        ansible_groups: ["databases", "staging"]
+
+    ansible:
+      enabled_roles:
+        - "core/users"
+        - "core/hardening"
+        - "core/monitoring"
+        - "core/backup"
+        - "platform/docker"
+        - "platform/webservers"
+        - "platform/databases"
+      variables:
+        environment: "staging"
+        log_level: "info"
+        backup_enabled: true
+
+  production:
+    vmid_range:
+      start: 3000
+      end: 3999
+    resource_limits:
+      max_cores: 16
+      max_memory_gb: 32
+      max_disk_gb: 500
+    vms:
+      - name: "prod-web-01"
+        vmid: 3001
+        ip: "10.11.95.10"
+        template: "ubuntu-2404"
+        node: "McLaren"
+        cores: 4
+        memory_gb: 8
+        disk_gb: 50
+        tags: ["production", "web", "terraform"]
+        description: "Servidor web principal"
+        ansible_groups: ["webservers", "production"]
+
+      - name: "prod-web-02"
+        vmid: 3002
+        ip: "10.11.95.11"
+        template: "ubuntu-2404-williams"
+        node: "Williams"
+        cores: 4
+        memory_gb: 8
+        disk_gb: 50
+        tags: ["production", "web", "terraform"]
+        description: "Servidor web secundário"
+        ansible_groups: ["webservers", "production"]
+
+      - name: "prod-db-01"
+        vmid: 3020
+        ip: "10.11.95.20"
+        template: "ubuntu-2404"
+        node: "McLaren"
+        cores: 8
+        memory_gb: 16
+        disk_gb: 200
+        tags: ["production", "database", "terraform"]
+        description: "Banco de dados principal"
+        ansible_groups: ["databases", "production"]
+
+    ansible:
+      enabled_roles:
+        - "core/users"
+        - "core/hardening"
+        - "core/monitoring"
+        - "core/backup"
+        - "platform/docker"
+        - "platform/webservers"
+        - "platform/databases"
+        - "security/cis_compliance"
+      variables:
+        environment: "production"
+        log_level: "warn"
+        backup_enabled: true
+        monitoring_enabled: true
+        high_availability: true
+
+  infrastructure:
+    vmid_range:
+      start: 9000
+      end: 9999
+    resource_limits:
+      max_cores: 16
+      max_memory_gb: 32
+      max_disk_gb: 500
+    vms:
+      - name: "vault-server"
+        vmid: 9001
+        ip: "10.11.95.45"
+        template: "ubuntu-2404"
+        node: "McLaren"
+        cores: 2
+        memory_gb: 4
+        disk_gb: 30
+        tags: ["infrastructure", "security", "vault"]
+        description: "Servidor HashiCorp Vault"
+        ansible_groups: ["vault", "infrastructure"]
+
+      - name: "backup-server"
+        vmid: 9002
+        ip: "10.11.95.37"
+        template: "ubuntu-2404-williams"
+        node: "Williams"
+        cores: 4
+        memory_gb: 8
+        disk_gb: 500
+        tags: ["infrastructure", "backup"]
+        description: "Servidor de backup"
+        ansible_groups: ["backup", "infrastructure"]
+
+      - name: "monitoring-server"
+        vmid: 9010
+        ip: "10.11.95.31"
+        template: "ubuntu-2404"
+        node: "McLaren"
+        cores: 4
+        memory_gb: 8
+        disk_gb: 100
+        tags: ["infrastructure", "monitoring"]
+        description: "Servidor de monitoramento"
+        ansible_groups: ["monitoring", "infrastructure"]
+
+    ansible:
+      enabled_roles:
+        - "core/users"
+        - "core/hardening"
+        - "core/monitoring"
+        - "core/backup"
+        - "security/cis_compliance"
+      variables:
+        environment: "infrastructure"
+        log_level: "info"
+        backup_enabled: true
+        monitoring_enabled: true
