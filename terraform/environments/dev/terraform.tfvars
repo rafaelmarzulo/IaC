@@ -1,20 +1,22 @@
-# =============================================================================
+# ====================================================================================
 # Development Environment Configuration
-# =============================================================================
+# ====================================================================================
+# Este arquivo contém as configurações específicas para o ambiente de desenvolvimento
+# Baseado em: config.yml - networks.development e vmids.development
 
 # Environment settings
-environment   = "dev"
-project_name  = "myproject"
+environment  = "dev"
+project_name = "myproject"
 
 # Proxmox configuration
-target_node     = "proxmox-node1"
-template_name   = "ubuntu-22.04-template"
-template_id     = "1010"  # Optional: specify template VMID
+target_node   = "proxmox-node1"
+template_name = "ubuntu-22.04-template"
+template_id   = "1010"
 
 # VM configuration
-vm_count        = 2
-vm_name_prefix  = "dev-vm"
-vmid_start      = 1100
+vm_count       = 2
+vm_name_prefix = "dev-vm"
+vmid_start     = 1100  # Range: 1000-1999 (Development VMs)
 
 vm_defaults = {
   cores     = 2
@@ -35,8 +37,8 @@ nameserver     = "1.1.1.1 8.8.8.8"
 ci_user     = "ubuntu"
 ci_password = ""  # Leave empty to use SSH keys only
 ssh_keys    = <<-EOT
-  ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@example.com
-  ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQ... admin@example.com
+ssh-ed25519 AAAA...user@example.com
+ssh-rsa AAAA...admin@example.com
 EOT
 
 # Tags and metadata
@@ -47,3 +49,4 @@ created_by      = "terraform-dev"
 enable_cloud_init = true
 enable_backup     = false  # Backup disabled for dev environment
 enable_monitoring = false  # Monitoring disabled for dev environment
+
